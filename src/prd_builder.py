@@ -33,45 +33,86 @@ class AnalysisResult:
     gaps: List[Gap]  # Missing information
 
 
-ANALYSIS_PROMPT = """Eres un Product Manager experto analizando información de producto.
+ANALYSIS_PROMPT = """You are a STRICT information extraction system. Your ONLY job is to COPY information from the source document.
 
 {language_instruction}
 
-Tu trabajo es EXTRAER información del contexto proporcionado, NO inventar nada.
+🚨 CRITICAL ANTI-HALLUCINATION RULES 🚨
 
-**Reglas estrictas:**
-1. Solo extrae información EXPLÍCITAMENTE mencionada en el contexto
-2. Si algo no está claro, márcalo como "gap" (información faltante)
-3. Separa features explícitas de features inferidas lógicamente
-4. Asigna scores de confianza (0-1) a cada sección extraída
-5. NO inventes features, usuarios, o requisitos que no estén mencionados
+**ABSOLUTE PROHIBITIONS:**
+1. ❌ DO NOT invent ANY features, screens, buttons, or functionality
+2. ❌ DO NOT invent API endpoints, feature flags, or technical details
+3. ❌ DO NOT invent user personas, roles, or responsibilities
+4. ❌ DO NOT invent user flows, states, or interactions
+5. ❌ DO NOT add examples, assumptions, or "logical" extensions
+6. ❌ DO NOT create generic content to "fill gaps"
+7. ❌ DO NOT modify, simplify, or reinterpret what you read
+
+**WHAT YOU MUST DO:**
+1. ✅ COPY EXACTLY what is written in the source document
+2. ✅ Use LITERAL text from the document (copy-paste mode)
+3. ✅ If a detail is mentioned, extract it VERBATIM
+4. ✅ If information is missing, mark it as "missing_sections"
+5. ✅ Preserve ALL specific details: names, numbers, exact wording
+6. ✅ Keep technical terms, feature names, and specifications EXACTLY as written
+
+**EXTRACTION MODE:**
+- **Literal copying**: If document says "Mónica is a non-technical admin", write EXACTLY that
+- **Preserve specifics**: If document mentions "Feature #41187", keep that exact number
+- **No interpretation**: If document says "cluster requests", don't explain HOW - just note it exists
+- **No expansion**: If document lists 3 personas, extract ONLY those 3 - don't add a 4th
+
+**EXAMPLES OF VIOLATIONS (DO NOT DO THIS):**
+
+❌ BAD - Inventing:
+- Document mentions "knowledge snippets" → You add "manual snippet generator button"
+- Document has "Mónica: Admin" → You add "Mónica analyzes financial reports"
+- Document mentions "integration" → You invent "API /api/integration endpoint"
+
+✅ GOOD - Extracting:
+- Document: "Mónica is a non-technical administrator" → Extract: "Mónica is a non-technical administrator"
+- Document: "Feature integrates with Solution Recommendation" → Extract: "Integrates with Solution Recommendation"
+- Document: "Generates knowledge snippets from requests" → Extract: "Generates knowledge snippets from requests"
+
+**CONFIDENCE SCORING:**
+- 1.0 = Information is explicitly stated with details
+- 0.8 = Information is clearly mentioned but brief
+- 0.5 = Information is implied or partial
+- 0.0 = Information is NOT in the document (mark as missing)
 
 **Secciones a analizar:**
 {sections_info}
 
 **Formato de salida (JSON):**
 {{
-  "product_name": "Nombre del producto/feature (si se menciona)",
+  "product_name": "EXACT name from document (or 'Unknown' if not stated)",
   "extracted_info": {{
-    "section_key": "Contenido extraído del contexto original",
+    "section_key": "LITERAL text copied from document - NO interpretation, NO expansion, NO invention",
     ...
   }},
   "confidence_scores": {{
-    "section_key": 0.8,  // 0-1, qué tan seguro estás de la extracción
+    "section_key": 0.0-1.0,  // How explicitly is this stated in the document?
     ...
   }},
   "explicit_features": [
-    "Feature mencionada explícitamente en el contexto"
+    "EXACT feature names/descriptions from document - COPY-PASTE only"
   ],
   "inferred_features": [
-    "Feature que se puede inferir lógicamente del contexto"
+    "Features that are CLEARLY implied by explicit statements (use VERY sparingly)"
   ],
   "missing_sections": [
-    "section_key que no tiene información en el contexto"
+    "section_key where NO information exists in the document"
   ]
 }}
 
-Analiza el contexto y extrae SOLO lo que está presente."""
+**FINAL CHECK BEFORE RESPONDING:**
+- Did I invent ANY feature not in the document? → If YES, REMOVE IT
+- Did I add ANY persona details not stated? → If YES, REMOVE IT
+- Did I create ANY technical specs not mentioned? → If YES, REMOVE IT
+- Did I expand ANY brief mentions into full descriptions? → If YES, REVERT TO BRIEF
+- Is EVERY piece of information traceable to the source? → If NO, REMOVE IT
+
+Extract information in LITERAL COPY MODE. When in doubt, mark as missing."""
 
 
 QUESTION_GENERATION_PROMPT = """Eres un Product Manager experto generando preguntas para completar un PRD.
@@ -140,11 +181,11 @@ def analyze_input(context: str, client: OpenAI, language_code: str = "es") -> An
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Analiza este contexto:\n\n{context}"}
+                {"role": "user", "content": f"Extract information in LITERAL COPY MODE from this context:\n\n{context}"}
             ],
             response_format={"type": "json_object"},
-            temperature=0.2,  # Low temperature for factual extraction
-            max_tokens=3000
+            temperature=0.05,  # ULTRA-low temperature for pure extraction
+            max_tokens=4000  # Increased for detailed documents
         )
         
         content = response.choices[0].message.content
@@ -199,6 +240,11 @@ def generate_questions(analysis: AnalysisResult, client: OpenAI, max_questions: 
     Returns:
         List of Gaps with specific questions
     """
+    # If no gaps, return empty list
+    if not analysis.gaps:
+        print("   • No hay gaps detectados")
+        return []
+    
     # Prepare known info summary
     known_info = f"**Producto:** {analysis.product_name}\n\n"
     if analysis.explicit_features:
@@ -218,6 +264,11 @@ def generate_questions(analysis: AnalysisResult, client: OpenAI, max_questions: 
     # Separate gaps by priority
     critical_gaps = [g for g in analysis.gaps if g.priority == SectionPriority.CRITICAL]
     important_gaps = [g for g in analysis.gaps if g.priority == SectionPriority.IMPORTANT]
+    
+    # If no critical or important gaps, return empty (optional sections don't need questions)
+    if not critical_gaps and not important_gaps:
+        print("   • Solo gaps opcionales detectados, no se generan preguntas")
+        return []
     
     critical_gaps_str = "\n".join([f"- {g.section_title}" for g in critical_gaps])
     important_gaps_str = "\n".join([f"- {g.section_title}" for g in important_gaps])
@@ -303,16 +354,19 @@ def build_prd(
     for section in PRDTemplate.SECTIONS:
         content = all_content.get(section.key, "")
         
-        if content and content.strip():
-            # Use AI to format the content professionally
-            formatted_content = _format_section_content(
-                section=section,
-                raw_content=content,
-                product_name=analysis.product_name,
-                client=client,
-                language_code=language_code
-            )
-            prd_sections[section.key] = formatted_content
+        # Skip sections that are explicitly marked as missing or empty
+        if not content or content.strip() == "" or content.strip().lower() == "missing_sections":
+            continue
+        
+        # Use AI to format the content professionally
+        formatted_content = _format_section_content(
+            section=section,
+            raw_content=content,
+            product_name=analysis.product_name,
+            client=client,
+            language_code=language_code
+        )
+        prd_sections[section.key] = formatted_content
     
     # Create metadata
     from datetime import datetime
@@ -337,7 +391,7 @@ def _format_section_content(
     language_code: str = "es"
 ) -> str:
     """
-    Format section content professionally using AI with enterprise-grade standards.
+    Format section content with STRICT preservation of source material.
     
     Args:
         section: PRD section
@@ -347,126 +401,154 @@ def _format_section_content(
         language_code: Language code for formatting (en, es, pt, fr, de)
         
     Returns:
-        Professionally formatted content
+        Professionally formatted content (structure only, NO new content)
     """
     # Get language instruction
     from language_detector import get_language_instruction
     language_instruction = get_language_instruction(language_code)
     
-    # Enterprise-grade formatting prompt
+    # ULTRA-STRICT formatting prompt
     prompt = f"""{language_instruction}
 
-You are a Senior Product Manager at a top-tier SaaS B2B enterprise company (Google, Meta, Atlassian, Amazon level).
+🚨 CRITICAL: You are a FORMATTING ASSISTANT, NOT a content creator 🚨
 
-Your task is to format a PRD section with EXTREME professionalism, completeness, and detail - similar to a 30-page enterprise PRD.
+Your ONLY job is to add Markdown structure to existing content. You MUST NOT add ANY new information.
 
 **Product:** {product_name}
 **Section:** {section.title}
 **Section Purpose:** {section.description}
 
-**Raw Content (to be formatted):**
+**Raw Content (to be formatted ONLY):**
 {raw_content}
 
-**CRITICAL FORMATTING REQUIREMENTS:**
+═══════════════════════════════════════════════════════════
+🛑 ABSOLUTE PROHIBITIONS - DO NOT VIOLATE THESE 🛑
+═══════════════════════════════════════════════════════════
 
-1. **Style & Tone:**
-   - Clear, executive, business-oriented language
-   - Formal and precise (not casual)
-   - Detailed and exhaustive (think 30-page PRD, not 3-page)
-   - Structured and consistent
-   - Engineering-ready specifications
+❌ DO NOT add features, screens, buttons, or functionality not in raw content
+❌ DO NOT add persona details, responsibilities, or characteristics not stated
+❌ DO NOT add API endpoints, technical specs, or implementation details not mentioned
+❌ DO NOT add user flows, states, or interactions not described
+❌ DO NOT add examples, use cases, or scenarios not provided
+❌ DO NOT add metrics, KPIs, or measurements not specified
+❌ DO NOT expand brief mentions into detailed descriptions
+❌ DO NOT interpret, assume, or infer anything beyond what's written
+❌ DO NOT add "professional" filler content
+❌ DO NOT create subsections for content that doesn't exist
 
-2. **Level of Detail:**
-   - Be VERY detailed and specific
-   - Include exact UI texts, labels, button names
-   - Specify states (loading, error, success, empty)
-   - Define edge cases and exceptions
-   - Include business logic rules
-   - Specify visibility/permission rules
-   - Define validation rules
-   - Include preconditions and postconditions
+═══════════════════════════════════════════════════════════
+✅ WHAT YOU MUST DO
+═══════════════════════════════════════════════════════════
 
-3. **Content Requirements by Section Type:**
+1. **PRESERVE EXACTLY**: Every word, name, number, and detail from raw content
+2. **ADD ONLY STRUCTURE**: Headers (###, ####), lists (-, 1.), tables, bold/italic
+3. **KEEP VERBATIM**: Technical terms, feature names, persona names, specifications
+4. **NO EXPANSION**: If raw content is brief, keep it brief
+5. **NO INVENTION**: If a detail isn't mentioned, don't add it
 
-   **For Functional Requirements:**
-   - List new screens/views
-   - Describe behaviors and interactions
-   - Define all states
-   - Specify business logic
-   - Define visibility rules
-   - Map user flows (happy path + alternatives)
-   - List edge cases
-   - Provide exact UI texts
-   - Define validation rules
-   - Specify data requirements
+═══════════════════════════════════════════════════════════
+📋 FORMATTING GUIDELINES (Structure Only)
+═══════════════════════════════════════════════════════════
 
-   **For UX & Flows:**
-   - Describe user journeys step-by-step
-   - Include preconditions
-   - Include postconditions
-   - Show alternative paths
-   - Define error scenarios
-   - Specify UI/UX patterns
-   - Include accessibility requirements
+**Allowed Formatting:**
+- Add headers (###, ####) to organize content
+- Convert to bullet lists (-) or numbered lists (1.)
+- Add tables for structured data
+- Add **bold** for emphasis on existing key terms
+- Add code blocks (\`\`\`) for technical specs that exist in raw content
+- Add line breaks for readability
 
-   **For Technical Requirements:**
-   - List feature flags needed
-   - Specify APIs (endpoints, methods, payloads)
-   - Define data models
-   - List dependencies
-   - Specify performance requirements
-   - Define scalability needs
-   - List security requirements
-   - Note technical constraints
+**Forbidden Actions:**
+- Adding new sentences or paragraphs
+- Expanding abbreviations or brief mentions
+- Creating examples not in raw content
+- Adding context or explanations
+- Filling in "obvious" gaps
+- Making content more "complete"
 
-   **For Acceptance Criteria:**
-   - Use Gherkin format (Given/When/Then) when appropriate
-   - Be specific and testable
-   - Include test scenarios
-   - Define quality gates
-   - Specify performance benchmarks
+═══════════════════════════════════════════════════════════
+⚠️ EXAMPLES OF VIOLATIONS (DO NOT DO THIS)
+═══════════════════════════════════════════════════════════
 
-   **For KPIs & Metrics:**
-   - Define primary success metrics
-   - Include leading indicators
-   - Include lagging indicators
-   - Specify target values/goals
-   - Explain how to track each metric
-   - Avoid vanity metrics
+❌ **BAD - Adding content:**
 
-4. **Formatting Standards:**
-   - Use Markdown formatting (headers, lists, tables, code blocks)
-   - Use tables for structured data
-   - Use bullet lists for items
-   - Use numbered lists for sequences
-   - Use code blocks for technical specs
-   - Use bold for emphasis on key terms
-   - Use clear section hierarchy (###, ####)
+Raw: "Mónica is an administrator"
+Bad output: "Mónica is a non-technical administrator responsible for user management, system configuration, and reporting. She needs intuitive interfaces..."
 
-5. **ANTI-HALLUCINATION RULES:**
-   - ONLY use information from the raw content provided
-   - DO NOT invent features, requirements, or details
-   - DO NOT add assumptions not in the original content
-   - If the raw content is brief, expand it professionally but stay grounded
-   - Maintain ALL information from the raw content
+✅ **GOOD - Formatting only:**
 
-6. **Output:**
-   - Return ONLY the formatted content
-   - NO explanations or meta-commentary
-   - NO "Here is..." or "I've formatted..."
-   - Start directly with the content
+Raw: "Mónica is an administrator"
+Good output: "**Mónica**: Administrator"
 
-**Generate the formatted section content now - make it enterprise-grade, detailed, and professional.**"""
+---
+
+❌ **BAD - Inventing details:**
+
+Raw: "Feature generates knowledge snippets"
+Bad output: "### Knowledge Snippet Generation\n- Manual generation via 'Generate Snippet' button\n- Automatic generation from request analysis\n- Classification as novel/complementary/redundant"
+
+✅ **GOOD - Preserving exactly:**
+
+Raw: "Feature generates knowledge snippets"
+Good output: "### Knowledge Snippet Generation\nFeature generates knowledge snippets"
+
+---
+
+❌ **BAD - Expanding personas:**
+
+Raw: "Jorge: End user"
+Bad output: "**Jorge** - End User\n- Analyzes financial reports\n- Reviews dashboards\n- Makes data-driven decisions"
+
+✅ **GOOD - Literal preservation:**
+
+Raw: "Jorge: End user"
+Good output: "**Jorge**: End user"
+
+═══════════════════════════════════════════════════════════
+🎯 YOUR TASK
+═══════════════════════════════════════════════════════════
+
+1. Read the raw content carefully
+2. Identify natural groupings or lists
+3. Add Markdown structure (headers, lists, tables)
+4. Preserve EVERY detail exactly as written
+5. Do NOT add ANY new information
+
+**Output Requirements:**
+- Return ONLY the formatted content
+- NO explanations, NO "Here is...", NO meta-commentary
+- Start directly with the formatted content
+- If raw content is empty/minimal, output should be empty/minimal
+
+═══════════════════════════════════════════════════════════
+✓ FINAL CHECKLIST BEFORE RESPONDING
+═══════════════════════════════════════════════════════════
+
+Before you output, verify:
+
+□ Did I add ANY feature not in raw content? → If YES, REMOVE IT
+□ Did I add ANY persona detail not stated? → If YES, REMOVE IT  
+□ Did I add ANY technical spec not mentioned? → If YES, REMOVE IT
+□ Did I expand ANY brief mention? → If YES, REVERT TO BRIEF
+□ Did I add ANY example not provided? → If YES, REMOVE IT
+□ Is EVERY sentence traceable to raw content? → If NO, REMOVE IT
+□ Did I only add formatting (headers, lists, bold)? → Must be YES
+
+**If you added ANYTHING beyond formatting, you FAILED. Remove it.**
+
+═══════════════════════════════════════════════════════════
+
+Now format the raw content with ZERO additions. Structure only."""
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are a Senior Product Manager at an enterprise SaaS company, expert in writing detailed, professional PRDs following industry best practices from Google, Meta, Atlassian, and Amazon."},
+                {"role": "system", "content": "You are a strict formatting assistant. You add Markdown structure to content but NEVER add new information. You preserve source material exactly as written."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.3,
-            max_tokens=2500  # Increased for detailed content
+            temperature=0.1,  # Very low for literal preservation
+            max_tokens=2500
         )
         
         return response.choices[0].message.content.strip()
