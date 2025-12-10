@@ -1,0 +1,60 @@
+{
+  "product_name": "KB Analytics - Data Export : RM #31753",
+  "explicit_features": [
+    "Exportar los datos a Power BI, Excel, Looker u otras herramientas.",
+    "Integrar los datos de la KB con otras fuentes de datos (solicitudes, agentes, etc).",
+    "kd_data_export_extended"
+  ],
+  "inferred_features": [],
+  "gaps_count": 6,
+  "gaps": [
+    {
+      "section_key": "opportunity_analysis",
+      "section_title": "Opportunity & Market Analysis",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se proporciona un análisis de oportunidad en el documento.\n\nFeatures identificadas: Exportar los datos a Power BI, Excel, Looker u otras herramientas., Integrar los datos de la KB con otras fuentes de datos (solicitudes, agentes, etc)., kd_data_export_extended",
+      "options": null
+    },
+    {
+      "section_key": "ux_flows",
+      "section_title": "UX & Flows",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se describen flujos de experiencia de usuario en el documento.\n\nInformación relacionada disponible:\n- Functional Requirements: Data source name: Artículos. Esta nueva opción debe agregarse en el selector de fuente de datos: Columnas del data source: ID artículo, Título, Link, ...\n\nFeatures identificadas: Exportar los datos a Power BI, Excel, Looker u otras herramientas., Integrar los datos de la KB con otras fuentes de datos (solicitudes, agentes, etc)., kd_data_export_extended",
+      "options": null
+    },
+    {
+      "section_key": "acceptance_criteria",
+      "section_title": "Acceptance Criteria",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se especifican criterios de aceptación en el documento.\n\nInformación relacionada disponible:\n- Functional Requirements: Data source name: Artículos. Esta nueva opción debe agregarse en el selector de fuente de datos: Columnas del data source: ID artículo, Título, Link, ...\n\nFeatures identificadas: Exportar los datos a Power BI, Excel, Looker u otras herramientas., Integrar los datos de la KB con otras fuentes de datos (solicitudes, agentes, etc)., kd_data_export_extended",
+      "options": null
+    },
+    {
+      "section_key": "risks_challenges",
+      "section_title": "Risks & Challenges",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se mencionan riesgos o desafíos en el documento.\n\nInformación relacionada disponible:\n- Solution Proposal (General Overview): Esta propuesta busca ampliar esa capacidad mediante incorporar la opción de exportación de metadatos vinculados a la Base de Conocimiento.\n\nFeatures identificadas: Exportar los datos a Power BI, Excel, Looker u otras herramientas., Integrar los datos de la KB con otras fuentes de datos (solicitudes, agentes, etc)., kd_data_export_extended",
+      "options": null
+    },
+    {
+      "section_key": "out_of_scope",
+      "section_title": "Out of Scope",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se define lo que está fuera del alcance en el documento.\n\nFeatures identificadas: Exportar los datos a Power BI, Excel, Looker u otras herramientas., Integrar los datos de la KB con otras fuentes de datos (solicitudes, agentes, etc)., kd_data_export_extended",
+      "options": null
+    },
+    {
+      "section_key": "appendix",
+      "section_title": "Appendix",
+      "priority": "optional",
+      "question": "",
+      "context": "Razón: No se incluye un apéndice en el documento.\n\nFeatures identificadas: Exportar los datos a Power BI, Excel, Looker u otras herramientas., Integrar los datos de la KB con otras fuentes de datos (solicitudes, agentes, etc)., kd_data_export_extended",
+      "options": null
+    }
+  ]
+}

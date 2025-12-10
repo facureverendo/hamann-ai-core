@@ -13,7 +13,10 @@ import {
   Clock,
   AlertCircle,
   ExternalLink,
-  X
+  X,
+  AlertTriangle,
+  Info,
+  HelpCircle
 } from 'lucide-react'
 import { projectService } from '../../services/projectService'
 
@@ -274,21 +277,157 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
             </div>
 
             {showResults === 'gaps' && resultsData.gaps && (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-400 mb-4">
-                  Se detectaron {resultsData.gaps_count} gaps en el análisis
-                </p>
-                {resultsData.gaps.map((gap: any, i: number) => (
-                  <div key={i} className="p-4 glass-card rounded-lg border-l-2 border-yellow-400">
-                    <h4 className="text-sm font-medium text-white mb-1">{gap.section_title}</h4>
-                    <p className="text-sm text-gray-300 mb-2">{gap.question}</p>
-                    {gap.options && (
-                      <div className="text-xs text-gray-400">
-                        Opciones: {gap.options.join(', ')}
-                      </div>
-                    )}
+              <div className="space-y-4">
+                {/* Summary Header */}
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
+                  <div>
+                    <p className="text-sm text-gray-400">
+                      Se detectaron <span className="text-white font-semibold">{resultsData.gaps_count}</span> gaps en el análisis
+                    </p>
                   </div>
-                ))}
+                  <div className="flex gap-3 text-xs">
+                    {(() => {
+                      const critical = resultsData.gaps.filter((g: any) => g.priority === 'critical').length
+                      const important = resultsData.gaps.filter((g: any) => g.priority === 'important').length
+                      const optional = resultsData.gaps.filter((g: any) => g.priority === 'optional').length
+                      return (
+                        <>
+                          {critical > 0 && (
+                            <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded border border-red-500/30">
+                              {critical} Crítico{critical !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {important > 0 && (
+                            <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded border border-yellow-500/30">
+                              {important} Importante{important !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {optional > 0 && (
+                            <span className="px-2 py-1 bg-gray-500/20 text-gray-400 rounded border border-gray-500/30">
+                              {optional} Opcional{optional !== 1 ? 'es' : ''}
+                            </span>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                {/* Gap Cards */}
+                <div className="space-y-4">
+                  {resultsData.gaps.map((gap: any, i: number) => {
+                    const getPriorityConfig = (priority: string) => {
+                      switch (priority) {
+                        case 'critical':
+                          return {
+                            color: 'red',
+                            borderColor: 'border-red-500/50',
+                            bgColor: 'bg-red-500/10',
+                            textColor: 'text-red-400',
+                            badgeColor: 'bg-red-500/20 border-red-500/30 text-red-400',
+                            icon: AlertTriangle
+                          }
+                        case 'important':
+                          return {
+                            color: 'yellow',
+                            borderColor: 'border-yellow-500/50',
+                            bgColor: 'bg-yellow-500/10',
+                            textColor: 'text-yellow-400',
+                            badgeColor: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400',
+                            icon: Info
+                          }
+                        default:
+                          return {
+                            color: 'gray',
+                            borderColor: 'border-gray-500/50',
+                            bgColor: 'bg-gray-500/10',
+                            textColor: 'text-gray-400',
+                            badgeColor: 'bg-gray-500/20 border-gray-500/30 text-gray-400',
+                            icon: HelpCircle
+                          }
+                      }
+                    }
+                    
+                    const priorityConfig = getPriorityConfig(gap.priority)
+                    const PriorityIcon = priorityConfig.icon
+
+                    return (
+                      <div
+                        key={i}
+                        className={`p-5 glass-card rounded-lg border-l-4 ${priorityConfig.borderColor} ${priorityConfig.bgColor} transition hover:bg-white/5`}
+                      >
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-start gap-3 flex-1">
+                            <PriorityIcon className={`w-5 h-5 ${priorityConfig.textColor} mt-0.5 flex-shrink-0`} />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="text-base font-semibold text-white">{gap.section_title}</h4>
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityConfig.badgeColor}`}>
+                                  {gap.priority_label}
+                                </span>
+                              </div>
+                              {gap.description && (
+                                <p className="text-sm text-gray-300 mb-2">{gap.description}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Context Information */}
+                        {gap.context && (
+                          <div className="mt-4 pt-4 border-t border-white/10">
+                            <p className="text-xs font-medium text-gray-400 mb-2 flex items-center gap-1">
+                              <Info className="w-3 h-3" />
+                              Contexto disponible:
+                            </p>
+                            <div className="text-xs text-gray-300 bg-white/5 p-3 rounded border border-white/10 whitespace-pre-line">
+                              {gap.context}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Guiding Questions */}
+                        {gap.guiding_questions && gap.guiding_questions.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-white/10">
+                            <p className="text-xs font-medium text-gray-400 mb-2 flex items-center gap-1">
+                              <HelpCircle className="w-3 h-3" />
+                              Preguntas guía para completar esta sección:
+                            </p>
+                            <ul className="space-y-1.5">
+                              {gap.guiding_questions.map((question: string, qIdx: number) => (
+                                <li key={qIdx} className="text-xs text-gray-300 flex items-start gap-2">
+                                  <span className="text-neon-cyan mt-1">•</span>
+                                  <span>{question}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Question and Options (if available) */}
+                        {gap.question && (
+                          <div className="mt-4 pt-4 border-t border-white/10">
+                            <p className="text-xs font-medium text-gray-400 mb-2">Pregunta generada:</p>
+                            <p className="text-sm text-gray-300">{gap.question}</p>
+                            {gap.options && gap.options.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {gap.options.map((option: string, optIdx: number) => (
+                                  <span
+                                    key={optIdx}
+                                    className="px-2 py-1 bg-white/5 border border-white/10 rounded text-xs text-gray-300"
+                                  >
+                                    {option}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
 

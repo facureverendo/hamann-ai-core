@@ -8,9 +8,16 @@ from pydantic import BaseModel
 from pathlib import Path
 import json
 import shutil
+import os
 from datetime import datetime
 
 from api.services.project_processor import ProjectProcessor
+import sys
+from pathlib import Path as PathLib
+
+# Add src to path to import PRD template
+sys.path.insert(0, str(PathLib(__file__).parent.parent.parent / 'src'))
+from prd_template import EnterprisePRDTemplate
 
 router = APIRouter()
 processor = ProjectProcessor()
@@ -164,6 +171,9 @@ async def analyze_gaps(project_id: str):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        import traceback
+        error_detail = f"Error analyzing gaps: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Log to console for debugging
         raise HTTPException(status_code=500, detail=f"Error analyzing gaps: {str(e)}")
 
 
@@ -261,36 +271,238 @@ async def get_context(project_id: str):
     raise HTTPException(status_code=404, detail="Context file not found")
 
 
-@router.get("/{project_id}/gaps")
-async def get_gaps(project_id: str):
-    """Get analyzed gaps"""
-    state = processor.load_state(project_id)
-    if not state:
-        raise HTTPException(status_code=404, detail="Project not found")
+def translate_text(text: str, target_language: str, client) -> str:
+    """Translate text to target language using OpenAI"""
+    if target_language == "en":
+        return text  # Already in English
     
-    if not state.gaps_analyzed:
-        raise HTTPException(status_code=400, detail="Gaps not analyzed yet")
+    language_names = {
+        "es": "Spanish",
+        "pt": "Portuguese",
+        "fr": "French",
+        "de": "German"
+    }
     
-    project_dir = processor.get_project_dir(project_id)
-    analysis_file = project_dir / "analysis.json"
-    
-    if not analysis_file.exists():
-        # Si el estado dice que está analizado pero no hay archivo, retornar vacío
-        return {
-            "gaps_count": 0,
-            "gaps": [],
-            "message": "Analysis file not found, but gaps were marked as analyzed"
-        }
+    target_lang_name = language_names.get(target_language, "Spanish")
     
     try:
-        with open(analysis_file, 'r', encoding='utf-8') as f:
-            analysis_data = json.load(f)
-        return {
-            "gaps_count": analysis_data.get("gaps_count", 0),
-            "gaps": analysis_data.get("gaps", [])
-        }
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You are a professional translator. Translate the following text to {target_lang_name}. Keep the same tone and technical terminology. Return ONLY the translation, no explanations."
+                },
+                {
+                    "role": "user",
+                    "content": text
+                }
+            ],
+            temperature=0.3,
+            max_tokens=500
+        )
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading analysis file: {str(e)}")
+        print(f"Translation error: {e}")
+        return text  # Return original if translation fails
+
+
+def translate_list(texts: List[str], target_language: str, client) -> List[str]:
+    """Translate a list of texts to target language using OpenAI (batch translation)"""
+    if target_language == "en":
+        return texts  # Already in English
+    
+    if not texts:
+        return []
+    
+    language_names = {
+        "es": "Spanish",
+        "pt": "Portuguese",
+        "fr": "French",
+        "de": "German"
+    }
+    
+    target_lang_name = language_names.get(target_language, "Spanish")
+    
+    # Combine all texts with numbered markers
+    combined_text = "\n".join([f"{i+1}. {text}" for i, text in enumerate(texts)])
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You are a professional translator. Translate the following numbered list to {target_lang_name}. Keep the same tone and technical terminology. Return the translations in the same numbered format (1. translation, 2. translation, etc.). Return ONLY the translations, no explanations."
+                },
+                {
+                    "role": "user",
+                    "content": combined_text
+                }
+            ],
+            temperature=0.3,
+            max_tokens=2000
+        )
+        
+        # Parse the response back into a list
+        translated_text = response.choices[0].message.content.strip()
+        # Extract numbered items
+        translated_items = []
+        for line in translated_text.split('\n'):
+            line = line.strip()
+            # Remove leading number and period if present
+            if line and (line[0].isdigit() or line.startswith('-')):
+                # Remove number prefix (e.g., "1. " or "- ")
+                cleaned = line.split('. ', 1)[-1] if '. ' in line else line.split('- ', 1)[-1] if line.startswith('- ') else line
+                translated_items.append(cleaned)
+            elif line:
+                translated_items.append(line)
+        
+        # Ensure we have the same number of items
+        if len(translated_items) == len(texts):
+            return translated_items
+        else:
+            # Fallback: translate individually
+            return [translate_text(text, target_language, client) for text in texts]
+    except Exception as e:
+        print(f"Batch translation error: {e}, falling back to individual translation")
+        # Fallback: translate individually
+        return [translate_text(text, target_language, client) for text in texts]
+
+
+@router.get("/{project_id}/gaps")
+async def get_gaps(project_id: str):
+    """Get analyzed gaps with enriched section information"""
+    try:
+        state = processor.load_state(project_id)
+        if not state:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        if not state.gaps_analyzed:
+            raise HTTPException(status_code=400, detail="Gaps not analyzed yet")
+        
+        project_dir = processor.get_project_dir(project_id)
+        analysis_file = project_dir / "analysis.json"
+        
+        if not analysis_file.exists():
+            # Si el estado dice que está analizado pero no hay archivo, retornar vacío
+            return {
+                "gaps_count": 0,
+                "gaps": [],
+                "message": "Analysis file not found, but gaps were marked as analyzed"
+            }
+        
+        try:
+            with open(analysis_file, 'r', encoding='utf-8') as f:
+                analysis_data = json.load(f)
+            
+            gaps = analysis_data.get("gaps", [])
+            product_name = analysis_data.get("product_name", "")
+            explicit_features = analysis_data.get("explicit_features", [])
+            extracted_info = analysis_data.get("extracted_info", {}) or {}
+            
+            # Get project language code
+            language_code = state.language_code or "en"
+            
+            # Initialize OpenAI client for translations
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                # If no API key, skip translation and use English
+                client = None
+            else:
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key)
+            
+            # Enrich gaps with section information from PRD template
+            enriched_gaps = []
+            for gap in gaps:
+                section_key = gap.get("section_key")
+                section = EnterprisePRDTemplate.get_section(section_key)
+                
+                enriched_gap = gap.copy()
+                
+                if section:
+                    # Translate section description if client is available
+                    try:
+                        if client and language_code != "en":
+                            enriched_gap["description"] = translate_text(section.description, language_code, client)
+                        else:
+                            enriched_gap["description"] = section.description
+                    except Exception as e:
+                        print(f"Error translating description for {section_key}: {e}")
+                        enriched_gap["description"] = section.description  # Fallback to original
+                    
+                    # Translate guiding questions if client is available (batch translation)
+                    try:
+                        if client and language_code != "en":
+                            enriched_gap["guiding_questions"] = translate_list(section.guiding_questions, language_code, client)
+                        else:
+                            enriched_gap["guiding_questions"] = section.guiding_questions
+                    except Exception as e:
+                        print(f"Error translating questions for {section_key}: {e}")
+                        enriched_gap["guiding_questions"] = section.guiding_questions  # Fallback to original
+                else:
+                    enriched_gap["description"] = ""
+                    enriched_gap["guiding_questions"] = []
+                
+                # Add priority label in Spanish
+                priority = gap.get("priority", "optional")
+                priority_labels = {
+                    "critical": "Crítico",
+                    "important": "Importante",
+                    "optional": "Opcional"
+                }
+                enriched_gap["priority_label"] = priority_labels.get(priority, priority)
+                
+                # Enrich context if missing or empty
+                if not enriched_gap.get("context") or enriched_gap.get("context") == "":
+                    context_parts = []
+                    
+                    if product_name and product_name != "Producto Sin Nombre":
+                        context_parts.append(f"Producto: {product_name}")
+                    
+                    # Add related extracted information
+                    related_sections = []
+                    if section_key == "ux_flows" and "functional_requirements" in extracted_info:
+                        related_sections.append("functional_requirements")
+                    elif section_key == "acceptance_criteria" and "functional_requirements" in extracted_info:
+                        related_sections.append("functional_requirements")
+                    elif section_key == "risks_challenges" and "solution_overview" in extracted_info:
+                        related_sections.append("solution_overview")
+                    
+                    if related_sections:
+                        context_parts.append("\nInformación relacionada disponible:")
+                        for rel_key in related_sections:
+                            rel_section = EnterprisePRDTemplate.get_section(rel_key)
+                            if rel_section and rel_key in extracted_info:
+                                content_preview = extracted_info[rel_key][:150] + "..." if len(extracted_info[rel_key]) > 150 else extracted_info[rel_key]
+                                context_parts.append(f"- {rel_section.title}: {content_preview}")
+                    
+                    if explicit_features:
+                        context_parts.append(f"\nFeatures identificadas: {', '.join(explicit_features[:3])}")
+                        if len(explicit_features) > 3:
+                            context_parts.append(f"(y {len(explicit_features) - 3} más)")
+                    
+                    enriched_gap["context"] = "\n".join(context_parts) if context_parts else f"Esta sección no fue encontrada en el documento analizado. Es necesaria para completar el PRD."
+                
+                enriched_gaps.append(enriched_gap)
+        
+            return {
+                "gaps_count": analysis_data.get("gaps_count", 0),
+                "gaps": enriched_gaps
+            }
+        except Exception as e:
+            import traceback
+            error_detail = f"Error processing gaps: {str(e)}\n{traceback.format_exc()}"
+            print(error_detail)  # Log to console for debugging
+            raise HTTPException(status_code=500, detail=f"Error processing gaps: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_detail = f"Error in get_gaps endpoint: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Log to console for debugging
+        raise HTTPException(status_code=500, detail=f"Error getting gaps: {str(e)}")
 
 
 @router.get("/{project_id}/backlog")

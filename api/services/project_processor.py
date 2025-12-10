@@ -132,20 +132,44 @@ class ProjectProcessor:
         
         # Save analysis
         analysis_file = project_dir / "analysis.json"
+        gaps_data = []
+        for gap in analysis.gaps:
+            try:
+                # Handle priority - it might be an enum or a string
+                if hasattr(gap.priority, 'value'):
+                    priority_value = gap.priority.value
+                else:
+                    priority_value = str(gap.priority)
+                
+                gaps_data.append({
+                    "section_key": gap.section_key,
+                    "section_title": gap.section_title,
+                    "priority": priority_value,
+                    "question": gap.question or "",
+                    "context": gap.context or "",
+                    "options": gap.options if gap.options else None
+                })
+            except Exception as e:
+                print(f"Error serializing gap {gap.section_key}: {e}")
+                # Fallback: create minimal gap data
+                gaps_data.append({
+                    "section_key": gap.section_key,
+                    "section_title": getattr(gap, 'section_title', 'Unknown'),
+                    "priority": "optional",
+                    "question": "",
+                    "context": "",
+                    "options": None
+                })
+        
         with open(analysis_file, 'w', encoding='utf-8') as f:
             json.dump({
                 "product_name": analysis.product_name,
                 "explicit_features": analysis.explicit_features,
                 "inferred_features": analysis.inferred_features,
+                "extracted_info": analysis.extracted_info if hasattr(analysis, 'extracted_info') else {},
+                "confidence_scores": analysis.confidence_scores if hasattr(analysis, 'confidence_scores') else {},
                 "gaps_count": len(analysis.gaps),
-                "gaps": [{
-                    "section_key": gap.section_key,
-                    "section_title": gap.section_title,
-                    "priority": gap.priority.value,
-                    "question": gap.question,
-                    "context": gap.context,
-                    "options": gap.options
-                } for gap in analysis.gaps]
+                "gaps": gaps_data
             }, f, indent=2, ensure_ascii=False)
         
         # Update state

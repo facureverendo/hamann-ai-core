@@ -101,7 +101,10 @@ ANALYSIS_PROMPT = """You are a STRICT information extraction system. Your ONLY j
     "Features that are CLEARLY implied by explicit statements (use VERY sparingly)"
   ],
   "missing_sections": [
-    "section_key where NO information exists in the document"
+    {{
+      "section_key": "section_key",
+      "reason": "Brief explanation of why this section is missing or what related information exists"
+    }}
   ]
 }}
 
@@ -199,19 +202,72 @@ def analyze_input(context: str, client: OpenAI, language_code: str = "es") -> An
         inferred_features = parsed.get("inferred_features", [])
         missing_sections = parsed.get("missing_sections", [])
         
-        # Create gaps for missing sections
+        # Create gaps for missing sections with contextual information
         gaps = []
-        for section_key in missing_sections:
+        
+        # Handle both old format (list of strings) and new format (list of objects)
+        missing_sections_list = missing_sections if isinstance(missing_sections, list) else []
+        
+        for missing_item in missing_sections_list:
+            # Support both formats: string (section_key) or dict (section_key + reason)
+            if isinstance(missing_item, dict):
+                section_key = missing_item.get("section_key")
+                ai_reason = missing_item.get("reason", "")
+            else:
+                section_key = missing_item
+                ai_reason = ""
+            
             section = PRDTemplate.get_section(section_key)
             if section:
-                # Create a gap for each missing section
-                # We'll generate specific questions later
+                # Build context explaining what information exists and why this section is needed
+                context_parts = []
+                
+                # Add AI-generated reason if available
+                if ai_reason:
+                    context_parts.append(f"Razón: {ai_reason}")
+                
+                # Add product name context
+                if product_name and product_name != "Producto Sin Nombre":
+                    if not ai_reason:
+                        context_parts.append(f"Producto: {product_name}")
+                
+                # Add related extracted information that might be relevant
+                related_sections = []
+                if section_key == "ux_flows" and "functional_requirements" in extracted_info:
+                    related_sections.append("functional_requirements")
+                elif section_key == "acceptance_criteria" and "functional_requirements" in extracted_info:
+                    related_sections.append("functional_requirements")
+                elif section_key == "risks_challenges" and "solution_overview" in extracted_info:
+                    related_sections.append("solution_overview")
+                elif section_key == "kpis_metrics" and "solution_overview" in extracted_info:
+                    related_sections.append("solution_overview")
+                elif section_key == "technical_requirements" and "functional_requirements" in extracted_info:
+                    related_sections.append("functional_requirements")
+                
+                if related_sections:
+                    context_parts.append("\nInformación relacionada disponible:")
+                    for rel_key in related_sections:
+                        rel_section = PRDTemplate.get_section(rel_key)
+                        if rel_section and rel_key in extracted_info:
+                            content_preview = extracted_info[rel_key][:150] + "..." if len(extracted_info[rel_key]) > 150 else extracted_info[rel_key]
+                            context_parts.append(f"- {rel_section.title}: {content_preview}")
+                
+                # Add explicit features context if available
+                if explicit_features:
+                    context_parts.append(f"\nFeatures identificadas: {', '.join(explicit_features[:3])}")
+                    if len(explicit_features) > 3:
+                        context_parts.append(f"(y {len(explicit_features) - 3} más)")
+                
+                # Build context string
+                gap_context = "\n".join(context_parts) if context_parts else f"Esta sección no fue encontrada en el documento analizado. Es necesaria para completar el PRD del producto '{product_name}'."
+                
+                # Create a gap with contextual information
                 gaps.append(Gap(
                     section_key=section.key,
                     section_title=section.title,
                     priority=section.priority,
                     question="",  # Will be filled by generate_questions
-                    context=""
+                    context=gap_context
                 ))
         
         return AnalysisResult(
