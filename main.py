@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Haman Projects AI - The Engine
+Hamann Projects AI - The Engine
 Automated Backlog Generation from Unstructured Client Information
 
 Usage:
@@ -31,7 +31,7 @@ def print_banner():
     banner = """
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║           🚀 HAMAN PROJECTS AI - THE ENGINE 🚀            ║
+║           🚀 HAMANN PROJECTS AI - THE ENGINE 🚀            ║
 ║                                                           ║
 ║        Transformando Ideas en Backlogs Estructurados      ║
 ║                                                           ║

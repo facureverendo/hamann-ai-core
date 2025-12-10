@@ -337,7 +337,7 @@ def _format_section_content(
     language_code: str = "es"
 ) -> str:
     """
-    Format section content professionally using AI.
+    Format section content professionally using AI with enterprise-grade standards.
     
     Args:
         section: PRD section
@@ -353,35 +353,120 @@ def _format_section_content(
     from language_detector import get_language_instruction
     language_instruction = get_language_instruction(language_code)
     
+    # Enterprise-grade formatting prompt
     prompt = f"""{language_instruction}
 
-Eres un Product Manager experto formateando una sección de PRD.
+You are a Senior Product Manager at a top-tier SaaS B2B enterprise company (Google, Meta, Atlassian, Amazon level).
 
-**Producto:** {product_name}
-**Sección:** {section.title}
-**Descripción:** {section.description}
+Your task is to format a PRD section with EXTREME professionalism, completeness, and detail - similar to a 30-page enterprise PRD.
 
-**Contenido sin formato:**
+**Product:** {product_name}
+**Section:** {section.title}
+**Section Purpose:** {section.description}
+
+**Raw Content (to be formatted):**
 {raw_content}
 
-**Tu trabajo:**
-1. Formatea el contenido de manera profesional en Markdown
-2. Mantén TODA la información del contenido original
-3. NO agregues información que no esté en el contenido original
-4. Estructura el contenido de forma clara y legible
-5. Usa listas, subtítulos, y formato apropiado
+**CRITICAL FORMATTING REQUIREMENTS:**
 
-Devuelve SOLO el contenido formateado, sin explicaciones."""
+1. **Style & Tone:**
+   - Clear, executive, business-oriented language
+   - Formal and precise (not casual)
+   - Detailed and exhaustive (think 30-page PRD, not 3-page)
+   - Structured and consistent
+   - Engineering-ready specifications
+
+2. **Level of Detail:**
+   - Be VERY detailed and specific
+   - Include exact UI texts, labels, button names
+   - Specify states (loading, error, success, empty)
+   - Define edge cases and exceptions
+   - Include business logic rules
+   - Specify visibility/permission rules
+   - Define validation rules
+   - Include preconditions and postconditions
+
+3. **Content Requirements by Section Type:**
+
+   **For Functional Requirements:**
+   - List new screens/views
+   - Describe behaviors and interactions
+   - Define all states
+   - Specify business logic
+   - Define visibility rules
+   - Map user flows (happy path + alternatives)
+   - List edge cases
+   - Provide exact UI texts
+   - Define validation rules
+   - Specify data requirements
+
+   **For UX & Flows:**
+   - Describe user journeys step-by-step
+   - Include preconditions
+   - Include postconditions
+   - Show alternative paths
+   - Define error scenarios
+   - Specify UI/UX patterns
+   - Include accessibility requirements
+
+   **For Technical Requirements:**
+   - List feature flags needed
+   - Specify APIs (endpoints, methods, payloads)
+   - Define data models
+   - List dependencies
+   - Specify performance requirements
+   - Define scalability needs
+   - List security requirements
+   - Note technical constraints
+
+   **For Acceptance Criteria:**
+   - Use Gherkin format (Given/When/Then) when appropriate
+   - Be specific and testable
+   - Include test scenarios
+   - Define quality gates
+   - Specify performance benchmarks
+
+   **For KPIs & Metrics:**
+   - Define primary success metrics
+   - Include leading indicators
+   - Include lagging indicators
+   - Specify target values/goals
+   - Explain how to track each metric
+   - Avoid vanity metrics
+
+4. **Formatting Standards:**
+   - Use Markdown formatting (headers, lists, tables, code blocks)
+   - Use tables for structured data
+   - Use bullet lists for items
+   - Use numbered lists for sequences
+   - Use code blocks for technical specs
+   - Use bold for emphasis on key terms
+   - Use clear section hierarchy (###, ####)
+
+5. **ANTI-HALLUCINATION RULES:**
+   - ONLY use information from the raw content provided
+   - DO NOT invent features, requirements, or details
+   - DO NOT add assumptions not in the original content
+   - If the raw content is brief, expand it professionally but stay grounded
+   - Maintain ALL information from the raw content
+
+6. **Output:**
+   - Return ONLY the formatted content
+   - NO explanations or meta-commentary
+   - NO "Here is..." or "I've formatted..."
+   - Start directly with the content
+
+**Generate the formatted section content now - make it enterprise-grade, detailed, and professional.**"""
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Eres un experto en redacción de PRDs profesionales."},
+                {"role": "system", "content": "You are a Senior Product Manager at an enterprise SaaS company, expert in writing detailed, professional PRDs following industry best practices from Google, Meta, Atlassian, and Amazon."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
-            max_tokens=1000
+            max_tokens=2500  # Increased for detailed content
         )
         
         return response.choices[0].message.content.strip()
