@@ -1,0 +1,45 @@
+# Ejemplo de Proyecto: App de Paseadores de Perros
+
+## Descripción General
+Queremos crear una aplicación móvil similar a Uber, pero para contratar paseadores de perros profesionales.
+
+## Funcionalidades Principales
+
+### Para Dueños de Perros
+- Registro y creación de perfil
+- Agregar información de sus mascotas (nombre, raza, edad, temperamento)
+- Buscar paseadores disponibles cerca
+- Ver perfiles de paseadores con calificaciones y reseñas
+- Solicitar un paseo (inmediato o programado)
+- Seguimiento GPS en tiempo real del paseo
+- Recibir fotos y actualizaciones durante el paseo
+- Pago con tarjeta de crédito integrado
+- Historial de paseos
+
+### Para Paseadores
+- Registro y verificación de identidad
+- Crear perfil profesional con experiencia y certificaciones
+- Establecer disponibilidad y zonas de trabajo
+- Recibir solicitudes de paseo
+- Iniciar/finalizar paseos con GPS tracking
+- Enviar fotos y actualizaciones a los dueños
+- Recibir pagos automáticos
+- Ver historial y ganancias
+
+### Funcionalidades Técnicas
+- Sistema de notificaciones push
+- Integración con pasarela de pagos (Stripe/MercadoPago)
+- Mapa interactivo con geolocalización
+- Sistema de calificaciones y reseñas
+- Chat en tiempo real entre dueño y paseador
+- Panel de administración para gestionar usuarios
+
+## Prioridades
+1. MVP: Registro, búsqueda, solicitud de paseo, GPS tracking, pago
+2. Fase 2: Chat, fotos durante paseo, programación avanzada
+3. Fase 3: Servicios adicionales (guardería, veterinario a domicilio)
+
+## Plataformas
+- iOS y Android (React Native o Flutter)
+- Backend: Node.js o Python
+- Base de datos: PostgreSQL
