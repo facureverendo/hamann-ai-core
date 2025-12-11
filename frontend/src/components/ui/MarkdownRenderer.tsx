@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import mermaid from 'mermaid'
+import DiagramModal from './DiagramModal'
+import { Maximize2 } from 'lucide-react'
 
 interface MarkdownRendererProps {
   content: string
@@ -32,6 +34,23 @@ mermaid.initialize({
 
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalContent, setModalContent] = useState({ svg: '', title: '' })
+  const diagramsRef = useRef<Map<number, string>>(new Map())
+
+  const openModal = useCallback((index: number) => {
+    const svg = diagramsRef.current.get(index)
+    if (svg) {
+      console.log('Opening modal with diagram', index)
+      setModalContent({ 
+        svg, 
+        title: `Diagrama ${index + 1}` 
+      })
+      setModalOpen(true)
+    } else {
+      console.error('No SVG found for diagram', index)
+    }
+  }, [])
 
   useEffect(() => {
     const renderMermaidDiagrams = async () => {
@@ -42,6 +61,8 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
       // Find all mermaid code blocks
       const mermaidBlocks = container.querySelectorAll('.mermaid-code')
       
+      console.log(`Found ${mermaidBlocks.length} mermaid diagrams to render`)
+      
       for (let i = 0; i < mermaidBlocks.length; i++) {
         const block = mermaidBlocks[i] as HTMLElement
         const code = block.textContent || ''
@@ -50,18 +71,44 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
           const id = `mermaid-${Date.now()}-${i}`
           const { svg } = await mermaid.render(id, code)
           
+          // Store SVG in ref
+          diagramsRef.current.set(i, svg)
+          console.log(`Stored SVG for diagram ${i}`)
+          
           // Replace code block with rendered diagram
           const wrapper = document.createElement('div')
-          wrapper.className = 'mermaid-diagram bg-white/5 p-6 rounded-lg border border-white/10 overflow-x-auto overflow-y-auto my-4 min-h-[200px] max-h-[600px] w-full'
-          wrapper.innerHTML = svg
+          wrapper.className = 'mermaid-diagram-container relative group my-4 w-full'
+          wrapper.setAttribute('data-diagram-index', i.toString())
+          
+          // Create inner diagram wrapper
+          const diagramWrapper = document.createElement('div')
+          diagramWrapper.className = 'mermaid-diagram bg-white/5 p-6 rounded-lg border border-white/10 overflow-x-auto overflow-y-auto min-h-[200px] max-h-[600px] w-full cursor-pointer hover:border-neon-blue/50 transition-all'
+          diagramWrapper.innerHTML = svg
+          
+          // Create expand button overlay
+          const expandButton = document.createElement('button')
+          expandButton.className = 'absolute top-4 right-4 p-2 bg-neon-blue/80 hover:bg-neon-blue border border-neon-blue rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 flex items-center gap-2 text-white text-sm font-medium shadow-lg'
+          expandButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+              <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+            </svg>
+            <span>Ver completo</span>
+          `
+          expandButton.title = 'Abrir en pantalla completa'
           
           // Make sure SVG uses full width available
-          const svgElement = wrapper.querySelector('svg')
+          const svgElement = diagramWrapper.querySelector('svg')
           if (svgElement) {
             svgElement.style.maxWidth = '100%'
             svgElement.style.height = 'auto'
             svgElement.removeAttribute('width')
           }
+          
+          wrapper.appendChild(expandButton)
+          wrapper.appendChild(diagramWrapper)
           
           block.replaceWith(wrapper)
         } catch (error) {
@@ -73,6 +120,34 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
     renderMermaidDiagrams()
   }, [content])
+
+  // Handle clicks on diagrams - use capture phase to catch events before SVG elements
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      
+      // Check if we clicked inside a diagram container
+      const container = target.closest('.mermaid-diagram-container')
+      if (container) {
+        e.preventDefault()
+        e.stopPropagation()
+        const index = parseInt(container.getAttribute('data-diagram-index') || '0')
+        console.log('Diagram clicked, index:', index)
+        openModal(index)
+      }
+    }
+
+    const container = containerRef.current
+    if (container) {
+      console.log('Adding click listener to container')
+      // Use capture phase to catch events before they reach SVG elements
+      container.addEventListener('click', handleClick, true)
+      return () => {
+        console.log('Removing click listener from container')
+        container.removeEventListener('click', handleClick, true)
+      }
+    }
+  }, [openModal])
 
   const processContent = (text: string) => {
     // Split content into parts: text and mermaid blocks
@@ -113,15 +188,22 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const parts = processContent(content)
 
   return (
-    <div ref={containerRef} className="markdown-content">
-      {parts.map((part, index) => {
-        if (part.type === 'mermaid') {
-          return (
-            <pre key={index} className="mermaid-code hidden">
-              {part.content}
-            </pre>
-          )
-        } else {
+    <>
+      <DiagramModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        svgContent={modalContent.svg}
+        title={modalContent.title}
+      />
+      <div ref={containerRef} className="markdown-content">
+        {parts.map((part, index) => {
+          if (part.type === 'mermaid') {
+            return (
+              <pre key={index} className="mermaid-code hidden">
+                {part.content}
+              </pre>
+            )
+          } else {
           // Render text content with basic formatting
           const lines = part.content.split('\n')
           return (
@@ -195,8 +277,9 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
               })}
             </div>
           )
-        }
-      })}
-    </div>
+          }
+        })}
+      </div>
+    </>
   )
 }
