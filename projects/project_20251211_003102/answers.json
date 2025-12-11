@@ -1,0 +1,73 @@
+{
+  "session_started": "2025-12-11T00:35:11.051059",
+  "last_updated": "2025-12-11T00:41:44.174827",
+  "answers": [
+    {
+      "section_key": "business_context",
+      "section_title": "Business Context Brief",
+      "question": "¿Cuál es el contexto de negocio actual de la verdulería 'Apical & Don Rolo'?",
+      "answer": "Es un negocio que cuenta con dos locales: Apical y Don Rolo. \nAmbos locales son gestionados por los mismos duenios, pero tienen diferentes cajeros, algunos proveedores son compartidos, otros no.\nLa necesidad principal del cliente, e spoder obtener informacion relevante de viabildiad economica de ambos locales. Ganancias, perdidas, gcostos fijos, gannacias netas. Para asi poder hacer proyecciones",
+      "answered_at": "2025-12-11T00:37:35.418989",
+      "skipped": false
+    },
+    {
+      "section_key": "problem_definition",
+      "section_title": "Problem Definition",
+      "question": "¿Qué problemas específicos enfrenta actualmente la verdulería que este sistema de gestión busca resolver?",
+      "answer": "Falta de informacion de ingresos y egresos, falta de claridad en cuanto a cual es un buen dia del negocio, costos minimos que necesitan para mantener viable el local, punto de equilobrio del mismo",
+      "answered_at": "2025-12-11T00:38:28.090924",
+      "skipped": false
+    },
+    {
+      "section_key": "ux_flows",
+      "section_title": "UX & Flows",
+      "question": "¿Cómo se espera que los usuarios naveguen a través del sistema en un día típico?",
+      "answer": "Se espera que tanto cajeros como admins puedan ingresar al sistema con usuario y contrasenia.\nLuego pueden ingresar a la seccion INgresos, egresos, cargar sueldo, o reportes.\nEstas debem estar en formato navbar. Ya que debe ser mobile first, pues es la forma en que los usuarios utilizan el sistem",
+      "answered_at": "2025-12-11T00:39:36.857932",
+      "skipped": false
+    },
+    {
+      "section_key": "acceptance_criteria",
+      "section_title": "Acceptance Criteria",
+      "question": "¿Cuáles son los criterios de aceptación para considerar que el sistema cumple con los requisitos?",
+      "answer": "Feedback el cliente, reporte de inconvenientes de los cajeros",
+      "answered_at": "2025-12-11T00:40:01.399557",
+      "skipped": false
+    },
+    {
+      "section_key": "kpis_metrics",
+      "section_title": "KPIs & Metrics",
+      "question": "¿Qué KPIs y métricas se utilizarán para medir el éxito del sistema de gestión?",
+      "answer": "Uso de la platafroma, si hay movimientos diarios, quiere decir que se utiliza, y hay adopcion. Que no hayan faltantes de ingresos y egresos de forma diaria",
+      "answered_at": "2025-12-11T00:40:34.371891",
+      "skipped": false
+    },
+    {
+      "section_key": "user_insights",
+      "section_title": "User Insights & Research Links",
+      "question": "¿Qué información y conocimientos se han obtenido de los usuarios que podrían influir en el diseño del sistema?",
+      "answer": "Actua,entne manejan un excel, el cual es enorroso, ya que previamente deben cargar todo en una nota de papel",
+      "answered_at": "2025-12-11T00:41:05.348394",
+      "skipped": false
+    },
+    {
+      "section_key": "opportunity_analysis",
+      "section_title": "Opportunity & Market Analysis",
+      "question": "¿Qué oportunidades de mercado se han identificado para el sistema de gestión de verdulerías?",
+      "answer": "Muy bajo, es para este cliente en particualar",
+      "answered_at": "2025-12-11T00:41:18.982083",
+      "skipped": false
+    },
+    {
+      "section_key": "risks_challenges",
+      "section_title": "Risks & Challenges",
+      "question": "¿Cuáles son los principales riesgos y desafíos que podrían afectar el desarrollo o la implementación del sistema?",
+      "answer": "Falta de adopcion del sistema. Cosots fijos elevados de hosting y db. Falta de mantenimiento",
+      "answered_at": "2025-12-11T00:41:44.174808",
+      "skipped": false
+    }
+  ],
+  "regeneration_count": 0,
+  "status": "completed",
+  "completed_at": "2025-12-11T00:41:48.046633"
+}

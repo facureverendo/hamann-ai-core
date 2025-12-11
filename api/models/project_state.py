@@ -21,6 +21,7 @@ class ProjectState(BaseModel):
     questions_generated: bool = False
     prd_built: bool = False
     backlog_generated: bool = False
+    insights_generated: bool = False
     
     # Interactive session status
     interactive_session_active: bool = False

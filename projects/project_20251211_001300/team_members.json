@@ -1,0 +1,38 @@
+{
+  "team_members": [
+    {
+      "id": "tm_b33b1d31",
+      "name": "Alice",
+      "role": null,
+      "assigned_tasks_count": 0,
+      "total_story_points": 0.0,
+      "workload_percentage": 0.0,
+      "status": "available",
+      "created_at": "2025-12-11T00:23:30.800668",
+      "updated_at": "2025-12-11T00:23:30.800677"
+    },
+    {
+      "id": "tm_856c68e3",
+      "name": "Bob",
+      "role": null,
+      "assigned_tasks_count": 0,
+      "total_story_points": 0.0,
+      "workload_percentage": 0.0,
+      "status": "available",
+      "created_at": "2025-12-11T00:23:30.800724",
+      "updated_at": "2025-12-11T00:23:30.800729"
+    },
+    {
+      "id": "tm_052eb264",
+      "name": "Charlie",
+      "role": null,
+      "assigned_tasks_count": 0,
+      "total_story_points": 0.0,
+      "workload_percentage": 0.0,
+      "status": "available",
+      "created_at": "2025-12-11T00:23:30.800751",
+      "updated_at": "2025-12-11T00:23:30.800756"
+    }
+  ],
+  "generated_at": "2025-12-11T00:23:30.801090"
+}

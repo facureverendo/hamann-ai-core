@@ -1,0 +1,152 @@
+{
+  "product_name": "Unknown",
+  "explicit_features": [
+    "dispositivo Bluetooth a modo botón pulsador",
+    "electrificar la funda",
+    "funcionar a base de distancia",
+    "chips NFC implantados en formato subcutáneo",
+    "rutina automática al desconectarse del Bluetooth"
+  ],
+  "inferred_features": [],
+  "extracted_info": {
+    "business_context": "missing_sections",
+    "problem_definition": "missing_sections",
+    "personas_roles": "missing_sections",
+    "user_insights": "missing_sections",
+    "opportunity_analysis": "missing_sections",
+    "solution_overview": "La idea principal es algo similar a una pistola taser, en formato funda de celular",
+    "functional_requirements": "Con un dispositivo Bluetooth a modo botón pulsador. Y cuando nos quitan el celu de la mano, podemos presionar el botón y así electrificar la funda. También puede funcionar a base de distancia. Si el celu se distancia del pulsador, se activa automáticamente la electrificación de la funda. Si vamos por el camino de activarlo con la distancia, se pueden utilizar chips NFC directamente, los cuales, en muchos casos podrán ser implantados en formato subcutáneo. Como plus, al desconectarse del Bluetooth, podemos activar una rutina automática, la cual puede alertar a la policía y enviar la ubicación en tiempo real a algún contacto o servicio de support",
+    "ux_flows": "missing_sections",
+    "technical_requirements": "missing_sections",
+    "acceptance_criteria": "missing_sections",
+    "kpis_metrics": "missing_sections",
+    "risks_challenges": "missing_sections",
+    "rollout_plan": "missing_sections",
+    "out_of_scope": "missing_sections",
+    "appendix": "missing_sections"
+  },
+  "confidence_scores": {
+    "business_context": 0.0,
+    "problem_definition": 0.0,
+    "personas_roles": 0.0,
+    "user_insights": 0.0,
+    "opportunity_analysis": 0.0,
+    "solution_overview": 1.0,
+    "functional_requirements": 1.0,
+    "ux_flows": 0.0,
+    "technical_requirements": 0.0,
+    "acceptance_criteria": 0.0,
+    "kpis_metrics": 0.0,
+    "risks_challenges": 0.0,
+    "rollout_plan": 0.0,
+    "out_of_scope": 0.0,
+    "appendix": 0.0
+  },
+  "gaps_count": 13,
+  "gaps": [
+    {
+      "section_key": "business_context",
+      "section_title": "Business Context Brief",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se proporciona contexto estratégico o justificación empresarial en el documento.\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "problem_definition",
+      "section_title": "Problem Definition",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se proporciona un análisis detallado del problema en el documento.\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "personas_roles",
+      "section_title": "Personas & Roles",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se mencionan personas o roles de usuario en el documento.\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "user_insights",
+      "section_title": "User Insights & Research Links",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se incluyen datos de investigación, comentarios de usuarios o insights en el documento.\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "opportunity_analysis",
+      "section_title": "Opportunity & Market Analysis",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se analiza la oportunidad de mercado o el panorama competitivo en el documento.\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "ux_flows",
+      "section_title": "UX & Flows",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se describen flujos de experiencia de usuario o interacciones en el documento.\n\nInformación relacionada disponible:\n- Functional Requirements: Con un dispositivo Bluetooth a modo botón pulsador. Y cuando nos quitan el celu de la mano, podemos presionar el botón y así electrificar la funda. Ta...\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "technical_requirements",
+      "section_title": "Technical Requirements",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se especifican requisitos técnicos o restricciones en el documento.\n\nInformación relacionada disponible:\n- Functional Requirements: Con un dispositivo Bluetooth a modo botón pulsador. Y cuando nos quitan el celu de la mano, podemos presionar el botón y así electrificar la funda. Ta...\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "acceptance_criteria",
+      "section_title": "Acceptance Criteria",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se define el criterio de aceptación en el documento.\n\nInformación relacionada disponible:\n- Functional Requirements: Con un dispositivo Bluetooth a modo botón pulsador. Y cuando nos quitan el celu de la mano, podemos presionar el botón y así electrificar la funda. Ta...\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "kpis_metrics",
+      "section_title": "KPIs & Metrics",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se mencionan métricas de éxito o KPIs en el documento.\n\nInformación relacionada disponible:\n- Solution Proposal (General Overview): La idea principal es algo similar a una pistola taser, en formato funda de celular\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "risks_challenges",
+      "section_title": "Risks & Challenges",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se identifican riesgos, desafíos o estrategias de mitigación en el documento.\n\nInformación relacionada disponible:\n- Solution Proposal (General Overview): La idea principal es algo similar a una pistola taser, en formato funda de celular\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "rollout_plan",
+      "section_title": "Rollout Plan",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se describe una estrategia de lanzamiento o implementación en el documento.\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "out_of_scope",
+      "section_title": "Out of Scope",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se especifican elementos excluidos explícitamente en el documento.\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    },
+    {
+      "section_key": "appendix",
+      "section_title": "Appendix",
+      "priority": "optional",
+      "question": "",
+      "context": "Razón: No se incluyen materiales de apoyo en el documento.\n\nFeatures identificadas: dispositivo Bluetooth a modo botón pulsador, electrificar la funda, funcionar a base de distancia\n(y 2 más)",
+      "options": null
+    }
+  ]
+}

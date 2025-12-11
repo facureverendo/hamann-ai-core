@@ -172,6 +172,11 @@ class ProjectProcessor:
                 "gaps": gaps_data
             }, f, indent=2, ensure_ascii=False)
         
+        # Invalidate enriched gaps cache (will be regenerated on next request)
+        enriched_gaps_cache = project_dir / "enriched_gaps.json"
+        if enriched_gaps_cache.exists():
+            enriched_gaps_cache.unlink()
+        
         # Update state
         state.gaps_analyzed = True
         state.gaps_count = len(analysis.gaps)
@@ -305,6 +310,22 @@ class ProjectProcessor:
         state.updated_at = datetime.now().isoformat()
         self.save_state(state)
         
+        # Generate insights after PRD is built
+        print("🔍 Generating project insights from PRD...")
+        try:
+            from api.services.insights_generator import generate_all_insights
+            insights_results = generate_all_insights(project_dir, self.client)
+            print(f"✅ Generated {len(insights_results.get('risks', []))} risks, {len(insights_results.get('deliverables', []))} deliverables")
+            
+            # Update state
+            state.insights_generated = True
+            state.updated_at = datetime.now().isoformat()
+            self.save_state(state)
+        except Exception as e:
+            print(f"⚠️ Warning: Could not generate insights: {e}")
+            import traceback
+            traceback.print_exc()
+        
         return {
             "prd_path": str(prd_file),
             "is_complete": prd.is_complete(),
@@ -339,6 +360,22 @@ class ProjectProcessor:
         state.backlog_generated = True
         state.updated_at = datetime.now().isoformat()
         self.save_state(state)
+        
+        # Regenerate insights after backlog is created (to update team workload and deliverables)
+        print("🔍 Regenerating project insights with backlog data...")
+        try:
+            from api.services.insights_generator import generate_all_insights
+            insights_results = generate_all_insights(project_dir, self.client)
+            print(f"✅ Updated insights: {len(insights_results.get('team_members', []))} team members, {len(insights_results.get('deliverables', []))} deliverables")
+            
+            # Update state
+            state.insights_generated = True
+            state.updated_at = datetime.now().isoformat()
+            self.save_state(state)
+        except Exception as e:
+            print(f"⚠️ Warning: Could not regenerate insights: {e}")
+            import traceback
+            traceback.print_exc()
         
         return {
             "csv_path": csv_path,

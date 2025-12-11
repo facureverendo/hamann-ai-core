@@ -12,7 +12,7 @@ from pathlib import Path
 # Add parent directory to path to import src modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from routes import projects, prd, ai
+from routes import projects, prd, ai, insights
 
 app = FastAPI(title="Hamann Projects AI API", version="1.0.0")
 
@@ -29,6 +29,7 @@ app.add_middleware(
 app.include_router(projects.router, prefix="/api/projects", tags=["projects"])
 app.include_router(prd.router, prefix="/api/prd", tags=["prd"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
+app.include_router(insights.router, prefix="/api/projects", tags=["insights"])
 
 
 @app.get("/")

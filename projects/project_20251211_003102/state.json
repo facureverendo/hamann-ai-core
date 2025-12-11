@@ -1,0 +1,20 @@
+{
+  "project_id": "project_20251211_003102",
+  "project_name": "Sistema Gesion Verde",
+  "created_at": "2025-12-11T00:31:02.880348",
+  "updated_at": "2025-12-11T00:42:33.983268",
+  "inputs_processed": true,
+  "context_generated": true,
+  "gaps_analyzed": true,
+  "questions_generated": true,
+  "prd_built": true,
+  "backlog_generated": false,
+  "insights_generated": true,
+  "interactive_session_active": false,
+  "questions_answered_count": 8,
+  "questions_skipped_count": 0,
+  "language_code": "es",
+  "context_length": 3327,
+  "gaps_count": 9,
+  "questions_count": 8
+}

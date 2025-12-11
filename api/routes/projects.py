@@ -372,7 +372,7 @@ def translate_list(texts: List[str], target_language: str, client) -> List[str]:
 
 @router.get("/{project_id}/gaps")
 async def get_gaps(project_id: str):
-    """Get analyzed gaps with enriched section information"""
+    """Get analyzed gaps with enriched section information (cached for performance)"""
     try:
         state = processor.load_state(project_id)
         if not state:
@@ -383,6 +383,7 @@ async def get_gaps(project_id: str):
         
         project_dir = processor.get_project_dir(project_id)
         analysis_file = project_dir / "analysis.json"
+        enriched_gaps_cache = project_dir / "enriched_gaps.json"
         
         if not analysis_file.exists():
             # Si el estado dice que está analizado pero no hay archivo, retornar vacío
@@ -393,6 +394,18 @@ async def get_gaps(project_id: str):
             }
         
         try:
+            # Check if we have a cached version that's newer than the analysis file
+            if enriched_gaps_cache.exists():
+                cache_mtime = enriched_gaps_cache.stat().st_mtime
+                analysis_mtime = analysis_file.stat().st_mtime
+                
+                # If cache is newer than analysis file, use cached version
+                if cache_mtime >= analysis_mtime:
+                    with open(enriched_gaps_cache, 'r', encoding='utf-8') as f:
+                        cached_data = json.load(f)
+                        return cached_data
+            
+            # If no cache or cache is outdated, generate enriched gaps
             with open(analysis_file, 'r', encoding='utf-8') as f:
                 analysis_data = json.load(f)
             
@@ -487,10 +500,16 @@ async def get_gaps(project_id: str):
                 
                 enriched_gaps.append(enriched_gap)
         
-            return {
+            result = {
                 "gaps_count": analysis_data.get("gaps_count", 0),
                 "gaps": enriched_gaps
             }
+            
+            # Cache the enriched gaps for future requests
+            with open(enriched_gaps_cache, 'w', encoding='utf-8') as f:
+                json.dump(result, f, ensure_ascii=False, indent=2)
+            
+            return result
         except Exception as e:
             import traceback
             error_detail = f"Error processing gaps: {str(e)}\n{traceback.format_exc()}"
@@ -539,56 +558,72 @@ async def get_backlog(project_id: str):
 
 @router.get("/{project_id}/risks")
 async def get_risks(project_id: str):
-    """Get project risks"""
-    return {
-        "risks": [
-            {
-                "id": "risk-1",
-                "title": "Security review pending",
-                "severity": "critical",
-                "sector": "Engineering",
-                "description": "Security review is blocking deployment"
-            }
-        ]
-    }
+    """Get project risks - DEPRECATED: Use /api/projects/{id}/risks from insights router"""
+    # For backward compatibility, redirect to insights endpoint
+    project_dir = processor.get_project_dir(project_id)
+    risks_file = project_dir / "risks.json"
+    
+    if risks_file.exists():
+        with open(risks_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            return {"risks": data.get("risks", [])}
+    
+    return {"risks": []}
 
 
 @router.get("/{project_id}/timeline")
 async def get_timeline(project_id: str):
-    """Get predictive timeline"""
+    """Get predictive timeline with deliverables"""
+    # Read deliverables from insights
+    project_dir = processor.get_project_dir(project_id)
+    deliverables_file = project_dir / "deliverables.json"
+    
+    deliverables = []
+    if deliverables_file.exists():
+        with open(deliverables_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            deliverables_data = data.get("deliverables", [])
+            
+            # Convert to timeline format
+            for d in deliverables_data:
+                deliverables.append({
+                    "id": d.get("id"),
+                    "name": d.get("name"),
+                    "due_date": d.get("due_date"),
+                    "progress": d.get("progress", 0.0)
+                })
+    
+    # Generate milestones based on deliverables
+    milestones = []
+    for idx, d in enumerate(deliverables[:3]):  # First 3 as milestones
+        status = "completed" if d["progress"] >= 1.0 else ("at-risk" if d["progress"] < 0.3 else "in-progress")
+        milestones.append({
+            "id": f"m{idx+1}",
+            "name": d["name"],
+            "date": d["due_date"],
+            "status": status
+        })
+    
     return {
-        "milestones": [
-            {"id": "m1", "name": "Milestone 1", "date": "2024-12-15", "status": "completed"},
-            {"id": "m2", "name": "Milestone 2", "date": "2024-12-20", "status": "at-risk"},
-            {"id": "m3", "name": "Milestone 3", "date": "2024-12-25", "status": "planned"}
-        ],
-        "deliverables": [
-            {"id": "d1", "name": "Deliverable A", "due_date": "2024-12-15", "progress": 0.8},
-            {"id": "d2", "name": "Deliverable B", "due_date": "2024-12-20", "progress": 0.6}
-        ],
-        "delay_zones": [
-            {"start": "2024-12-18", "end": "2024-12-22", "severity": "medium"}
-        ]
+        "milestones": milestones,
+        "deliverables": deliverables,
+        "delay_zones": []  # Can be calculated based on at-risk deliverables
     }
 
 
 @router.get("/{project_id}/meetings")
 async def get_meetings(project_id: str):
-    """Get meeting summaries"""
-    return {
-        "meetings": [
-            {
-                "id": "meeting-1",
-                "title": "Sprint Planning Meeting",
-                "date": "2024-12-10",
-                "participants": 5,
-                "decisions": ["Feature scope approved", "Timeline adjusted"],
-                "action_items": [
-                    {"task": "Complete PRD review", "owner": "Alice", "done": False}
-                ]
-            }
-        ]
-    }
+    """Get meeting summaries - DEPRECATED: Use /api/projects/{id}/meetings from insights router"""
+    # For backward compatibility, redirect to insights endpoint
+    project_dir = processor.get_project_dir(project_id)
+    meetings_file = project_dir / "meetings.json"
+    
+    if meetings_file.exists():
+        with open(meetings_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            return {"meetings": data.get("meetings", [])}
+    
+    return {"meetings": []}
 
 
 @router.get("/{project_id}", response_model=ProjectDetail)

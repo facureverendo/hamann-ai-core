@@ -1,0 +1,107 @@
+{
+  "questions_by_priority": {
+    "critical": [
+      {
+        "section_key": "business_context",
+        "section_title": "Business Context Brief",
+        "priority": "critical",
+        "question": "¿Cuál es el contexto de negocio que justifica el desarrollo de este producto?",
+        "context": "Necesito entender el entorno de negocio para alinear el producto con los objetivos estratégicos de la empresa.",
+        "options": null
+      },
+      {
+        "section_key": "problem_definition",
+        "section_title": "Problem Definition",
+        "priority": "critical",
+        "question": "¿Qué problema específico del usuario estamos tratando de resolver con este producto?",
+        "context": "Es fundamental definir claramente el problema para asegurar que el producto ofrece una solución efectiva.",
+        "options": null
+      },
+      {
+        "section_key": "personas_roles",
+        "section_title": "Personas & Roles",
+        "priority": "critical",
+        "question": "¿Quiénes son las personas o roles principales que interactuarán con este producto?",
+        "context": "Conocer a los usuarios clave nos ayudará a diseñar una experiencia de usuario adecuada y centrada en sus necesidades.",
+        "options": null
+      },
+      {
+        "section_key": "ux_flows",
+        "section_title": "UX & Flows",
+        "priority": "critical",
+        "question": "¿Cómo será el flujo de usuario desde que inicia hasta que termina de usar el producto?",
+        "context": "Es importante definir el flujo de usuario para garantizar una experiencia de usuario coherente y sin fricciones.",
+        "options": null
+      },
+      {
+        "section_key": "technical_requirements",
+        "section_title": "Technical Requirements",
+        "priority": "critical",
+        "question": "¿Cuáles son los requisitos técnicos necesarios para implementar las funciones del producto?",
+        "context": "Necesitamos esta información para asegurar que el equipo de desarrollo pueda construir el producto de manera efectiva.",
+        "options": null
+      },
+      {
+        "section_key": "acceptance_criteria",
+        "section_title": "Acceptance Criteria",
+        "priority": "critical",
+        "question": "¿Cuáles son los criterios de aceptación para considerar que el producto cumple con los requisitos?",
+        "context": "Definir criterios de aceptación claros es crucial para validar que el producto cumple con las expectativas y requisitos.",
+        "options": null
+      },
+      {
+        "section_key": "kpis_metrics",
+        "section_title": "KPIs & Metrics",
+        "priority": "critical",
+        "question": "¿Qué KPIs y métricas se utilizarán para medir el éxito del producto?",
+        "context": "Es necesario establecer métricas para evaluar el rendimiento y éxito del producto en el mercado.",
+        "options": null
+      }
+    ],
+    "important": [
+      {
+        "section_key": "user_insights",
+        "section_title": "User Insights & Research Links",
+        "priority": "important",
+        "question": "¿Qué insights de usuario y enlaces de investigación están disponibles para informar el desarrollo del producto?",
+        "context": "Comprender los insights de usuario nos ayudará a diseñar un producto que realmente satisfaga las necesidades del mercado.",
+        "options": null
+      },
+      {
+        "section_key": "opportunity_analysis",
+        "section_title": "Opportunity & Market Analysis",
+        "priority": "important",
+        "question": "¿Cuál es el análisis de oportunidad y mercado para este producto?",
+        "context": "Necesitamos entender el tamaño del mercado y la oportunidad para justificar la inversión en el desarrollo del producto.",
+        "options": null
+      },
+      {
+        "section_key": "risks_challenges",
+        "section_title": "Risks & Challenges",
+        "priority": "important",
+        "question": "¿Cuáles son los riesgos y desafíos asociados con el desarrollo y lanzamiento de este producto?",
+        "context": "Identificar riesgos y desafíos nos permitirá planificar estrategias de mitigación efectivas.",
+        "options": null
+      },
+      {
+        "section_key": "rollout_plan",
+        "section_title": "Rollout Plan",
+        "priority": "important",
+        "question": "¿Cuál es el plan de implementación para el lanzamiento del producto?",
+        "context": "Un plan de implementación claro es esencial para coordinar el lanzamiento del producto de manera efectiva.",
+        "options": null
+      },
+      {
+        "section_key": "out_of_scope",
+        "section_title": "Out of Scope",
+        "priority": "important",
+        "question": "¿Qué elementos están fuera del alcance del proyecto?",
+        "context": "Definir lo que está fuera de alcance ayuda a gestionar las expectativas y enfocar los recursos de manera adecuada.",
+        "options": null
+      }
+    ],
+    "optional": []
+  },
+  "total_count": 12,
+  "generated_at": "2025-12-11T00:16:14.413506"
+}

@@ -11,6 +11,10 @@ export default function ProjectOverview() {
   const { project, loading, reload } = useProject(id)
   const [risks, setRisks] = useState<any[]>([])
   const [meetings, setMeetings] = useState<any[]>([])
+  const [deliverables, setDeliverables] = useState<any[]>([])
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [prdDecisions, setPrdDecisions] = useState<any[]>([])
+  const [weeklySummary, setWeeklySummary] = useState<any>(null)
   const [projectState, setProjectState] = useState<any>(null)
 
   const loadProjectState = async () => {
@@ -24,16 +28,41 @@ export default function ProjectOverview() {
     }
   }
 
+  const loadInsights = async () => {
+    if (id) {
+      try {
+        // Load all insights in parallel
+        const [risksData, meetingsData, deliverablesData, teamData, decisionsData, summaryData] = await Promise.all([
+          projectService.getRisks(id),
+          projectService.getMeetings(id),
+          projectService.getDeliverables(id),
+          projectService.getTeamMembers(id),
+          projectService.getPRDDecisions(id, 5),
+          projectService.getWeeklySummary(id).catch(() => null)
+        ])
+        
+        setRisks(risksData.risks || [])
+        setMeetings(meetingsData.meetings || [])
+        setDeliverables(deliverablesData.deliverables || [])
+        setTeamMembers(teamData.team_members || [])
+        setPrdDecisions(decisionsData.decisions || [])
+        setWeeklySummary(summaryData)
+      } catch (err) {
+        console.error('Error loading insights:', err)
+      }
+    }
+  }
+
   useEffect(() => {
     if (id) {
-      projectService.getRisks(id).then((data) => setRisks(data.risks || []))
-      projectService.getMeetings(id).then((data) => setMeetings(data.meetings || []))
       loadProjectState()
+      loadInsights()
     }
   }, [id])
 
   const handleStateUpdate = () => {
     loadProjectState()
+    loadInsights()
     reload()
   }
 
@@ -80,17 +109,27 @@ export default function ProjectOverview() {
               Deliverables Roadmap
             </h2>
             <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-4 glass-card rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-white">Deliverable {i}</span>
-                    <span className="text-xs text-gray-400">Due: Dec 20</span>
-                  </div>
-                  <div className="h-2 bg-dark-secondary rounded-full overflow-hidden">
-                    <div className="h-full bg-neon-cyan" style={{ width: `${60 + i * 10}%` }} />
-                  </div>
-                </div>
-              ))}
+              {deliverables.length > 0 ? (
+                deliverables.slice(0, 5).map((deliverable) => {
+                  const progressPercent = (deliverable.progress * 100).toFixed(0)
+                  return (
+                    <div key={deliverable.id} className="p-4 glass-card rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-white">{deliverable.name}</span>
+                        <span className="text-xs text-gray-400">Due: {new Date(deliverable.due_date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="h-2 bg-dark-secondary rounded-full overflow-hidden">
+                        <div className="h-full bg-neon-cyan" style={{ width: `${progressPercent}%` }} />
+                      </div>
+                      {deliverable.description && (
+                        <p className="text-xs text-gray-500 mt-2">{deliverable.description}</p>
+                      )}
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="text-sm text-gray-500">No deliverables defined yet</div>
+              )}
             </div>
           </GlassCard>
 
@@ -98,24 +137,68 @@ export default function ProjectOverview() {
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Latest PRD Decisions</h2>
             <div className="space-y-4">
-              <div className="border-l-2 border-neon-blue pl-4">
-                <div className="text-sm text-white">Feature scope finalized</div>
-                <div className="text-xs text-gray-500 mt-1">Updated 2 hours ago</div>
-              </div>
-              <div className="border-l-2 border-neon-cyan pl-4">
-                <div className="text-sm text-white">API endpoints approved</div>
-                <div className="text-xs text-gray-500 mt-1">Updated 1 day ago</div>
-              </div>
+              {prdDecisions.length > 0 ? (
+                prdDecisions.map((decision) => {
+                  const borderColor = decision.change_type === 'added' ? 'border-green-400' : 
+                                     decision.change_type === 'removed' ? 'border-red-400' : 
+                                     'border-neon-blue'
+                  
+                  const timeAgo = (timestamp: string) => {
+                    const seconds = Math.floor((new Date().getTime() - new Date(timestamp).getTime()) / 1000)
+                    if (seconds < 60) return 'just now'
+                    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`
+                    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`
+                    return `${Math.floor(seconds / 86400)} days ago`
+                  }
+                  
+                  return (
+                    <div key={decision.id} className={`border-l-2 ${borderColor} pl-4`}>
+                      <div className="text-sm text-white">{decision.description}</div>
+                      {decision.section_affected && (
+                        <div className="text-xs text-gray-400 mt-1">Section: {decision.section_affected}</div>
+                      )}
+                      <div className="text-xs text-gray-500 mt-1">{timeAgo(decision.timestamp)}</div>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="text-sm text-gray-500">No PRD changes tracked yet</div>
+              )}
             </div>
           </GlassCard>
 
           {/* Weekly AI Summary */}
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Weekly AI Summary</h2>
-            <p className="text-sm text-gray-300 leading-relaxed">
-              Project is on track with 75% completion. Key milestones achieved this week include
-              PRD finalization and API design approval. One blocker identified: pending security review.
-            </p>
+            {weeklySummary ? (
+              <div>
+                <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                  {weeklySummary.summary}
+                </p>
+                {weeklySummary.highlights && weeklySummary.highlights.length > 0 && (
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-green-400 mb-1">Highlights:</div>
+                    <ul className="text-xs text-gray-400 space-y-1">
+                      {weeklySummary.highlights.map((highlight: string, idx: number) => (
+                        <li key={idx}>• {highlight}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {weeklySummary.blockers && weeklySummary.blockers.length > 0 && (
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-yellow-400 mb-1">Blockers:</div>
+                    <ul className="text-xs text-gray-400 space-y-1">
+                      {weeklySummary.blockers.map((blocker: string, idx: number) => (
+                        <li key={idx}>• {blocker}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">Generate PRD and backlog to see weekly summary</div>
+            )}
           </GlassCard>
         </div>
 
@@ -128,20 +211,39 @@ export default function ProjectOverview() {
               Team Workload
             </h2>
             <div className="space-y-4">
-              {['Alice', 'Bob', 'Charlie'].map((name, i) => (
-                <div key={name}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-300">{name}</span>
-                    <span className="text-xs text-gray-500">{70 + i * 10}%</span>
-                  </div>
-                  <div className="h-2 bg-dark-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-neon-blue"
-                      style={{ width: `${70 + i * 10}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+              {teamMembers.length > 0 ? (
+                teamMembers.map((member) => {
+                  const workload = member.workload_percentage
+                  const barColor = workload > 80 ? 'bg-red-400' : workload > 60 ? 'bg-yellow-400' : 'bg-neon-blue'
+                  
+                  return (
+                    <div key={member.id}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="text-sm text-gray-300">{member.name}</span>
+                          {member.role && (
+                            <span className="text-xs text-gray-500 ml-2">({member.role})</span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">{workload.toFixed(0)}%</span>
+                      </div>
+                      <div className="h-2 bg-dark-secondary rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${barColor}`}
+                          style={{ width: `${Math.min(workload, 100)}%` }}
+                        />
+                      </div>
+                      {member.assigned_tasks_count > 0 && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {member.assigned_tasks_count} tasks ({member.total_story_points} pts)
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="text-sm text-gray-500">No team members assigned yet</div>
+              )}
             </div>
           </GlassCard>
 

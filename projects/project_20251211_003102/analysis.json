@@ -1,0 +1,121 @@
+{
+  "product_name": "Sistema de Gestión para Verdulerías “Apical & Don Rolo”",
+  "explicit_features": [
+    "Autenticación y roles: login simple con JWT",
+    "Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia)",
+    "Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados",
+    "Costos fijos: solo visibles y editables por el dueño",
+    "Reportes: resumen por local, por día y por tipo de transacción",
+    "Dashboard mobile-first: navegación rápida, botones grandes e interfaz táctil intuitiva"
+  ],
+  "inferred_features": [],
+  "extracted_info": {
+    "business_context": "missing_sections",
+    "problem_definition": "missing_sections",
+    "personas_roles": "Roles de usuario Dueño / Administrador ● Acceso total a todas las funciones. ● Visualización de reportes diarios, mensuales y por local. ● Registro y edición de costos fijos (alquiler, servicios, salarios, etc.). Cajero ● Carga rápida de ingresos (ventas) con tipo de pago. ● Carga de egresos (proveedores, sueldos, gastos diarios) con posibilidad de fraccionar medios de pago. ● Autoregistro de pago diario (sueldos).",
+    "user_insights": "missing_sections",
+    "opportunity_analysis": "missing_sections",
+    "solution_overview": "Desarrollar un sistema web mobile-first de gestión para los dos locales de la verdulería, que permita registrar ingresos, egresos y costos fijos, y ofrecer reportes simples y claros al dueño.",
+    "functional_requirements": "Roles de usuario Dueño / Administrador ● Acceso total a todas las funciones. ● Visualización de reportes diarios, mensuales y por local. ● Registro y edición de costos fijos (alquiler, servicios, salarios, etc.). Cajero ● Carga rápida de ingresos (ventas) con tipo de pago. ● Carga de egresos (proveedores, sueldos, gastos diarios) con posibilidad de fraccionar medios de pago. ● Autoregistro de pago diario (sueldos). Módulos ● Autenticación y roles: login simple con JWT. ● Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia). ● Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados. ● Costos fijos: solo visibles y editables por el dueño. ● Reportes: resumen por local, por día y por tipo de transacción. ● Dashboard mobile-first: navegación rápida, botones grandes e interfaz táctil intuitiva.",
+    "ux_flows": "missing_sections",
+    "technical_requirements": "Capa Tecnología Frontend React 18 + Vite / Tailwind CSS Backend Node.js + Express Base de datos SQLite (versión local) Autenticación JWT Diseño Mobile first + responsive (compatible con tablets y desktop)",
+    "acceptance_criteria": "missing_sections",
+    "kpis_metrics": "missing_sections",
+    "risks_challenges": "missing_sections",
+    "rollout_plan": "Etapas y plazos estimados Etapa Descripción Duración estimada 1 Diseño de arquitectura y setup inicial (frontend + backend + DB) 3 días 2 Módulos de ingresos y egresos (mobile) 4 días 3 Autenticación y control de roles 2 días 4 Costos fijos y reportes básicos 3 días 5 Pruebas, ajustes visuales y deploy local / demo 2 días Duración total estimada: 14 días hábiles",
+    "out_of_scope": "● Hosting / VPS / dominio / certificados SSL ● Integración con sistemas de facturación o POS externos ● Diseño gráfico avanzado (branding, UI personalizado más allá del MVP) ● Reportes avanzados (gráficos comparativos, dashboards BI)",
+    "appendix": "missing_sections"
+  },
+  "confidence_scores": {
+    "business_context": 0.0,
+    "problem_definition": 0.0,
+    "personas_roles": 1.0,
+    "user_insights": 0.0,
+    "opportunity_analysis": 0.0,
+    "solution_overview": 1.0,
+    "functional_requirements": 1.0,
+    "ux_flows": 0.0,
+    "technical_requirements": 1.0,
+    "acceptance_criteria": 0.0,
+    "kpis_metrics": 0.0,
+    "risks_challenges": 0.0,
+    "rollout_plan": 1.0,
+    "out_of_scope": 1.0,
+    "appendix": 0.0
+  },
+  "gaps_count": 9,
+  "gaps": [
+    {
+      "section_key": "business_context",
+      "section_title": "Business Context Brief",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se proporciona contexto estratégico o justificación empresarial en el documento.\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    },
+    {
+      "section_key": "problem_definition",
+      "section_title": "Problem Definition",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se proporciona un análisis detallado del problema en el documento.\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    },
+    {
+      "section_key": "user_insights",
+      "section_title": "User Insights & Research Links",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se incluyen datos de investigación, comentarios de usuarios o insights en el documento.\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    },
+    {
+      "section_key": "opportunity_analysis",
+      "section_title": "Opportunity & Market Analysis",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se menciona el análisis de oportunidades de mercado o el panorama competitivo en el documento.\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    },
+    {
+      "section_key": "ux_flows",
+      "section_title": "UX & Flows",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se describen los flujos de experiencia de usuario o interacciones en el documento.\n\nInformación relacionada disponible:\n- Functional Requirements: Roles de usuario Dueño / Administrador ● Acceso total a todas las funciones. ● Visualización de reportes diarios, mensuales y por local. ● Registro y ...\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    },
+    {
+      "section_key": "acceptance_criteria",
+      "section_title": "Acceptance Criteria",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se define el criterio de aceptación en el documento.\n\nInformación relacionada disponible:\n- Functional Requirements: Roles de usuario Dueño / Administrador ● Acceso total a todas las funciones. ● Visualización de reportes diarios, mensuales y por local. ● Registro y ...\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    },
+    {
+      "section_key": "kpis_metrics",
+      "section_title": "KPIs & Metrics",
+      "priority": "critical",
+      "question": "",
+      "context": "Razón: No se mencionan métricas de éxito o KPIs en el documento.\n\nInformación relacionada disponible:\n- Solution Proposal (General Overview): Desarrollar un sistema web mobile-first de gestión para los dos locales de la verdulería, que permita registrar ingresos, egresos y costos fijos, y of...\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    },
+    {
+      "section_key": "risks_challenges",
+      "section_title": "Risks & Challenges",
+      "priority": "important",
+      "question": "",
+      "context": "Razón: No se identifican riesgos, desafíos o estrategias de mitigación en el documento.\n\nInformación relacionada disponible:\n- Solution Proposal (General Overview): Desarrollar un sistema web mobile-first de gestión para los dos locales de la verdulería, que permita registrar ingresos, egresos y costos fijos, y of...\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    },
+    {
+      "section_key": "appendix",
+      "section_title": "Appendix",
+      "priority": "optional",
+      "question": "",
+      "context": "Razón: No se incluyen materiales de apoyo en el documento.\n\nFeatures identificadas: Autenticación y roles: login simple con JWT, Gestión de ingresos: monto + tipo de pago (efectivo, tarjeta, MP, transferencia), Gestión de egresos: monto + tipo(s) de pago, posibilidad de varios métodos combinados\n(y 3 más)",
+      "options": null
+    }
+  ]
+}

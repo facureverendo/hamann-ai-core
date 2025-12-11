@@ -1,0 +1,20 @@
+
+
+=================================================================================== Text Document: dispositivo-ani-robo.txt ===
+ispositivo para evitar que te roben el celu
+
+La idea principal es algo similar a una pistola taser, en formato funda de celular
+
+Con un dispositivo Bluetooth a modo botón pulsador 
+
+Y cuando nos quitan el celu de la mano, podemos presionar el botón y así electrificar la funda 
+
+También puede funcionar a base de distancia. Si el celu se distancia del pulsador, se activa automáticamente la electrificación de la funda.
+
+Si vamos por el camino de activarlo con la distancia, se pueden utilizar chips NFC directamente, los cuales, en muchos casos podrán ser implantados en formato subcutáneo 
+
+Como plus, al desconectarse del Bluetooth, podemos activar una rutina automática, la cual puede alertar a la policía y enviar la ubicación en tiempo real a algún contacto o servicio de support 
+
+
+
+================================================================================

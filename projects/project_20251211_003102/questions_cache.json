@@ -1,0 +1,75 @@
+{
+  "questions_by_priority": {
+    "critical": [
+      {
+        "section_key": "business_context",
+        "section_title": "Business Context Brief",
+        "priority": "critical",
+        "question": "¿Cuál es el contexto de negocio actual de la verdulería 'Apical & Don Rolo'?",
+        "context": "Necesitamos entender el entorno en el que opera la verdulería para alinear el producto con sus necesidades y objetivos comerciales.",
+        "options": null
+      },
+      {
+        "section_key": "problem_definition",
+        "section_title": "Problem Definition",
+        "priority": "critical",
+        "question": "¿Qué problemas específicos enfrenta actualmente la verdulería que este sistema de gestión busca resolver?",
+        "context": "Identificar los problemas actuales nos ayudará a asegurar que el producto aborde las necesidades críticas del negocio.",
+        "options": null
+      },
+      {
+        "section_key": "ux_flows",
+        "section_title": "UX & Flows",
+        "priority": "critical",
+        "question": "¿Cómo se espera que los usuarios naveguen a través del sistema en un día típico?",
+        "context": "Comprender los flujos de usuario es esencial para diseñar una experiencia de usuario intuitiva y eficiente.",
+        "options": null
+      },
+      {
+        "section_key": "acceptance_criteria",
+        "section_title": "Acceptance Criteria",
+        "priority": "critical",
+        "question": "¿Cuáles son los criterios de aceptación para considerar que el sistema cumple con los requisitos?",
+        "context": "Definir criterios claros de aceptación es crucial para asegurar que el producto final cumpla con las expectativas del cliente.",
+        "options": null
+      },
+      {
+        "section_key": "kpis_metrics",
+        "section_title": "KPIs & Metrics",
+        "priority": "critical",
+        "question": "¿Qué KPIs y métricas se utilizarán para medir el éxito del sistema de gestión?",
+        "context": "Establecer KPIs y métricas ayudará a evaluar el rendimiento y el impacto del producto en el negocio.",
+        "options": null
+      }
+    ],
+    "important": [
+      {
+        "section_key": "user_insights",
+        "section_title": "User Insights & Research Links",
+        "priority": "important",
+        "question": "¿Qué información y conocimientos se han obtenido de los usuarios que podrían influir en el diseño del sistema?",
+        "context": "Los insights de usuario son fundamentales para crear un producto que realmente satisfaga las necesidades de sus usuarios finales.",
+        "options": null
+      },
+      {
+        "section_key": "opportunity_analysis",
+        "section_title": "Opportunity & Market Analysis",
+        "priority": "important",
+        "question": "¿Qué oportunidades de mercado se han identificado para el sistema de gestión de verdulerías?",
+        "context": "Conocer las oportunidades de mercado ayudará a posicionar el producto de manera efectiva y a identificar ventajas competitivas.",
+        "options": null
+      },
+      {
+        "section_key": "risks_challenges",
+        "section_title": "Risks & Challenges",
+        "priority": "important",
+        "question": "¿Cuáles son los principales riesgos y desafíos que podrían afectar el desarrollo o la implementación del sistema?",
+        "context": "Identificar riesgos y desafíos es esencial para planificar estrategias de mitigación y asegurar el éxito del proyecto.",
+        "options": null
+      }
+    ],
+    "optional": []
+  },
+  "total_count": 8,
+  "generated_at": "2025-12-11T00:35:33.831388"
+}
