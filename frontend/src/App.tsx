@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Sidebar from './components/layout/Sidebar'
 import TopBar from './components/layout/TopBar'
 import Dashboard from './pages/Dashboard'
+import DashboardRedirect from './components/DashboardRedirect'
 import ProjectsList from './pages/ProjectsList'
 import ProjectOverview from './pages/ProjectOverview'
 import CreateProject from './pages/CreateProject'
@@ -26,7 +27,8 @@ function App() {
           <TopBar />
           <main className="flex-1 overflow-y-auto">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<DashboardRedirect />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               
               {/* Workspaces Routes */}
               <Route path="/workspaces" element={<WorkspaceList />} />

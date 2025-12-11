@@ -1,5 +1,5 @@
 {
-  "show_software_factory_mode": false,
+  "show_software_factory_mode": true,
   "show_product_mode": true,
-  "default_mode": "product"
+  "default_mode": "software_factory"
 }

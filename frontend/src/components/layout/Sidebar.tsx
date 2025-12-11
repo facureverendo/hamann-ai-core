@@ -13,12 +13,12 @@ import {
 import { settingsService, type AppSettings } from '../../services/settingsService'
 
 const allMenuItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', requiresMultipleModes: true },
   { path: '/workspaces', icon: FolderOpen, label: 'Workspaces', requiresSoftwareFactory: true },
   { path: '/projects', icon: FolderKanban, label: 'Features' },
   { path: '/meetings', icon: Video, label: 'Meetings' },
   { path: '/prd', icon: FileText, label: 'PRDs' },
-  { path: '/assistant', icon: Brain, label: 'AI Insights' },
+  { path: '/assistant', icon: Brain, label: 'AI Insights', hidden: true }, // Oculto temporalmente hasta implementar funcionalidad
   { path: '/risks', icon: AlertTriangle, label: 'Risks' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ]
@@ -58,10 +58,23 @@ export default function Sidebar() {
 
   // Filtrar items del menú según la configuración
   const menuItems = allMenuItems.filter((item) => {
+    // Ocultar items marcados como hidden
+    if (item.hidden) {
+      return false
+    }
+    
+    if (!appSettings) return true // Mostrar todo mientras carga
+    
     // Si el item requiere software factory mode, verificar que esté activo
     if (item.requiresSoftwareFactory) {
-      return appSettings?.show_software_factory_mode ?? true
+      return appSettings.show_software_factory_mode
     }
+    
+    // Si el item requiere múltiples modos (Dashboard), solo mostrar si ambos modos están activos
+    if (item.requiresMultipleModes) {
+      return appSettings.show_software_factory_mode && appSettings.show_product_mode
+    }
+    
     return true
   })
 

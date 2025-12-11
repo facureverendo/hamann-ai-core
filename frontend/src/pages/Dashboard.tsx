@@ -40,6 +40,15 @@ export default function Dashboard() {
       setShowWorkspaces(settings.show_software_factory_mode)
       setShowFeatures(settings.show_product_mode)
       
+      // Si solo hay un modo activo, redirigir a la página correspondiente
+      if (settings.show_software_factory_mode && !settings.show_product_mode) {
+        navigate('/workspaces', { replace: true })
+        return
+      } else if (!settings.show_software_factory_mode && settings.show_product_mode) {
+        navigate('/projects', { replace: true })
+        return
+      }
+      
       // Set default tab based on settings
       if (settings.default_mode === 'software_factory' && settings.show_software_factory_mode) {
         setActiveTab('workspaces')
