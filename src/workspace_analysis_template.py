@@ -2,7 +2,8 @@
 Workspace Analysis Template - Template para análisis de proyectos completos desde 0
 """
 
-from typing import Dict
+from typing import Dict, Optional
+from api.models.workspace import WorkspaceAnalysis
 
 
 class WorkspaceAnalysisPrompt:
@@ -12,23 +13,52 @@ class WorkspaceAnalysisPrompt:
     """
     
     @staticmethod
-    def get_analysis_prompt(unified_context: str, language_code: str = "es") -> str:
+    def get_analysis_prompt(
+        unified_context: str, 
+        language_code: str = "es",
+        previous_analysis: Optional[WorkspaceAnalysis] = None
+    ) -> str:
         """
         Genera el prompt para análisis completo del workspace.
         
         Args:
             unified_context: Contexto unificado de todos los documentos del proyecto
             language_code: Código de idioma (es, en, pt)
+            previous_analysis: Análisis previo si existe (para merge)
         
         Returns:
             Prompt formateado para el modelo de AI
         """
+        
+        # Preparar sección de análisis previo si existe
+        previous_section = ""
+        if previous_analysis:
+            previous_section = f"""
+
+# ANÁLISIS PREVIO EXISTENTE
+Ya existe un análisis previo de este proyecto. Tu tarea es:
+1. Preservar información válida del análisis anterior
+2. Actualizar con nueva información de los documentos
+3. Identificar cambios y actualizaciones
+4. Mantener coherencia con el análisis previo
+
+Análisis anterior:
+- Resumen ejecutivo: {previous_analysis.executive_summary[:300]}...
+- Módulos identificados: {len(previous_analysis.identified_features)} módulos
+- Módulos sugeridos: {[m.name for m in previous_analysis.suggested_modules][:5]}
+- Stack recomendado: {previous_analysis.tech_stack_recommendation.frontend if previous_analysis.tech_stack_recommendation else 'N/A'}
+- Riesgos técnicos identificados: {len(previous_analysis.technical_risks)} riesgos
+- Riesgos de negocio: {len(previous_analysis.business_risks)} riesgos
+
+IMPORTANTE: Genera un análisis actualizado que incorpore la nueva información mientras preserva lo válido del análisis anterior.
+"""
         
         prompts = {
             "es": """Eres un arquitecto de software senior especializado en análisis de proyectos completos.
 
 # CONTEXTO DEL PROYECTO
 {context}
+{previous_analysis}
 
 # TU TAREA
 Analiza en profundidad la documentación proporcionada y genera un análisis completo del proyecto siguiendo la estructura especificada.
@@ -164,6 +194,7 @@ Genera el análisis completo ahora:""",
 
 # PROJECT CONTEXT
 {context}
+{previous_analysis}
 
 # YOUR TASK
 Analyze the provided documentation in depth and generate a complete project analysis following the specified structure.
@@ -297,7 +328,10 @@ Generate the complete analysis now:"""
         }
         
         prompt_template = prompts.get(language_code, prompts["es"])
-        return prompt_template.format(context=unified_context)
+        return prompt_template.format(
+            context=unified_context,
+            previous_analysis=previous_section
+        )
     
     @staticmethod
     def get_module_suggestion_prompt(project_summary: str, language_code: str = "es") -> str:

@@ -1,0 +1,40 @@
+{
+  "id": "workspace_20251211_132011",
+  "name": "Sistema de POS para verdulerias",
+  "description": "Sistema para poer trackear a traves de balanzas el inventario del local, la balanza es el input, el cual es leido por el script y de esta manera se procesa o descuenta el stock. \r\nAdemas, se puede hacer carga de pedidos desde la UI, puedinedo sleeccionar que productos, pesos, etc",
+  "type": "software_factory",
+  "created_at": "2025-12-11T13:20:11.328544",
+  "updated_at": "2025-12-11T13:20:51.196286",
+  "features": [],
+  "context_documents": [
+    "README.md"
+  ],
+  "documents_processed": true,
+  "analysis_completed": true,
+  "analysis": {
+    "workspace_id": "workspace_20251211_132011",
+    "executive_summary": "El proyecto \"sist-control\" es una plataforma integral diseñada para la operación y auditoría de comercios con múltiples locales. Combina una API robusta desarrollada con FastAPI y un frontend moderno en React y Vite, permitiendo a los usuarios gestionar puntos de venta (POS), administrar flujos administrativos y generar reportes en tiempo real sobre inventario, compras y ventas. La solución está orientada a unificar operaciones de ventas, compras y stock, reduciendo errores operativos y proporcionando visibilidad sobre el rendimiento del negocio.\nLa propuesta de valor principal del proyecto radica en su capacidad para integrar de manera coherente y eficiente todos los aspectos operativos de un comercio con varias sucursales. Esto incluye soporte para transacciones por peso o unidad, integración con balanzas serias, y reportes diarios/semanales que permiten a los dueños tomar decisiones informadas oportunamente. Los objetivos clave del negocio incluyen la mejora de la eficiencia operativa, reducción de errores en el punto de venta, y una mayor visibilidad sobre el rendimiento del negocio.",
+    "project_scope": {},
+    "business_objectives": [],
+    "identified_features": [],
+    "suggested_modules": [],
+    "tech_stack_recommendation": null,
+    "architecture_overview": "- **Patrón arquitectónico propuesto:** Monolito modular\n- **Componentes principales del sistema:** Frontend React, API FastAPI, base de datos MySQL\n- **Flujos de datos críticos:** Transacciones POS, gestión de inventario, generación de reportes\n- **Integraciones externas:** Hardware de balanza, posible integración futura con pasarelas de pago\n- **Consideraciones de escalabilidad:** Uso de contenedores para despliegue, posibilidad de segmentar servicios en microservicios conforme crezcan las necesidades.",
+    "resource_estimation": null,
+    "timeline_estimation": null,
+    "technical_risks": [],
+    "business_risks": []
+  },
+  "document_history": [
+    {
+      "filename": "README.md",
+      "uploaded_at": "2025-12-11T13:20:11.329219",
+      "version": 1,
+      "size": 7418,
+      "is_initial": true
+    }
+  ],
+  "analysis_version": 2,
+  "last_analysis_at": "2025-12-11T13:20:51.196113",
+  "language_code": "es"
+}

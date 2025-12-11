@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import GlassCard from '../components/ui/GlassCard'
 import NeonButton from '../components/ui/NeonButton'
 import MarkdownRenderer from '../components/ui/MarkdownRenderer'
+import AddDocumentsModal from '../components/workspace/AddDocumentsModal'
 import { workspaceService, type WorkspaceDetail } from '../services/workspaceService'
 import {
   ArrowLeft,
@@ -14,7 +15,8 @@ import {
   Clock,
   ChevronRight,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react'
 
 export default function WorkspaceDetailPage() {
@@ -25,6 +27,7 @@ export default function WorkspaceDetailPage() {
   const [analyzing, setAnalyzing] = useState(false)
   const [features, setFeatures] = useState<any[]>([])
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [showAddDocuments, setShowAddDocuments] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -68,6 +71,25 @@ export default function WorkspaceDetailPage() {
     } finally {
       setAnalyzing(false)
     }
+  }
+
+  const handleReAnalyze = async () => {
+    if (!id) return
+    setAnalyzing(true)
+    try {
+      await workspaceService.reAnalyzeWorkspace(id, true)
+      await loadWorkspace()
+      setShowAnalysis(true)
+    } catch (error) {
+      console.error('Error re-analyzing workspace:', error)
+      alert('Error re-analizando el workspace. Por favor intenta de nuevo.')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  const handleDocumentsAdded = async () => {
+    await loadWorkspace()
   }
 
   const getStatusIcon = (step: boolean) => {
@@ -190,17 +212,130 @@ export default function WorkspaceDetailPage() {
 
         {/* Right Column - Content */}
         <div className="col-span-2 space-y-6">
+          {/* Documents Section */}
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Documentos del Proyecto</h3>
+              <NeonButton
+                size="sm"
+                onClick={() => setShowAddDocuments(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Añadir Documentos
+              </NeonButton>
+            </div>
+            
+            {/* Lista de documentos */}
+            {workspace.document_history && workspace.document_history.length > 0 ? (
+              <div className="space-y-2">
+                {workspace.document_history.map((doc, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-neon-cyan" />
+                      <div>
+                        <div className="text-sm text-white">{doc.filename}</div>
+                        <div className="text-xs text-gray-500">
+                          {doc.is_initial
+                            ? 'Inicial'
+                            : `Añadido ${new Date(doc.uploaded_at).toLocaleDateString()}`}
+                          {doc.version > 1 && ` (v${doc.version})`}
+                        </div>
+                      </div>
+                    </div>
+                    {!doc.is_initial && (
+                      <span className="text-xs text-neon-cyan bg-neon-cyan/20 px-2 py-1 rounded">
+                        Nuevo
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                No hay documentos cargados
+              </div>
+            )}
+            
+            {/* Indicador si necesita re-análisis */}
+            {workspace.documents_processed === false && (
+              <div className="mt-4 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-yellow-400 font-medium mb-2">
+                      Hay documentos nuevos. Se recomienda re-analizar el proyecto.
+                    </p>
+                    <NeonButton
+                      size="sm"
+                      onClick={handleReAnalyze}
+                      disabled={analyzing}
+                    >
+                      {analyzing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Re-analizando...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Re-analizar Proyecto
+                        </>
+                      )}
+                    </NeonButton>
+                  </div>
+                </div>
+              </div>
+            )}
+          </GlassCard>
+
           {/* Analysis Section */}
           {workspace.analysis && (
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Análisis del Proyecto</h3>
-                <button
-                  onClick={() => setShowAnalysis(!showAnalysis)}
-                  className="text-sm text-neon-cyan hover:text-neon-blue transition"
-                >
-                  {showAnalysis ? 'Ocultar' : 'Mostrar'}
-                </button>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-white">Análisis del Proyecto</h3>
+                  {workspace.analysis_version && workspace.analysis_version > 1 && (
+                    <span className="text-xs text-neon-cyan bg-neon-cyan/20 px-2 py-1 rounded">
+                      v{workspace.analysis_version}
+                    </span>
+                  )}
+                  {workspace.last_analysis_at && (
+                    <span className="text-xs text-gray-500">
+                      {new Date(workspace.last_analysis_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowAnalysis(!showAnalysis)}
+                    className="text-sm text-neon-cyan hover:text-neon-blue transition"
+                  >
+                    {showAnalysis ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                  {workspace.documents_processed === false && (
+                    <NeonButton
+                      size="sm"
+                      variant="purple"
+                      onClick={handleReAnalyze}
+                      disabled={analyzing}
+                    >
+                      {analyzing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Re-analizando...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Re-analizar
+                        </>
+                      )}
+                    </NeonButton>
+                  )}
+                </div>
               </div>
               {showAnalysis && (
                 <div className="prose prose-invert max-w-none">
@@ -266,6 +401,16 @@ export default function WorkspaceDetailPage() {
           </GlassCard>
         </div>
       </div>
+
+      {/* Add Documents Modal */}
+      {id && (
+        <AddDocumentsModal
+          workspaceId={id}
+          isOpen={showAddDocuments}
+          onClose={() => setShowAddDocuments(false)}
+          onSuccess={handleDocumentsAdded}
+        />
+      )}
     </div>
   )
 }

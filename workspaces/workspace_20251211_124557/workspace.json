@@ -4,26 +4,38 @@
   "description": "Este es un producto que pide un cliente, apra poder gestionar  sus dos locales de verduleria. La idea es poder tener control de ingresos, egresos, costos fijos, cual es el punto de equilibrio del negocio, etc",
   "type": "software_factory",
   "created_at": "2025-12-11T12:45:57.285802",
-  "updated_at": "2025-12-11T12:46:58.330308",
+  "updated_at": "2025-12-11T13:23:11.696293",
   "features": [],
   "context_documents": [
-    "Presupuesto Detallado.pdf"
+    "Presupuesto Detallado.pdf",
+    "README.md"
   ],
   "documents_processed": true,
   "analysis_completed": true,
   "analysis": {
     "workspace_id": "workspace_20251211_124557",
-    "executive_summary": "El proyecto se centra en el desarrollo de un sistema web mobile-first para gestionar los dos locales de la Verdulería Apical & Don Rolo. Este sistema está diseñado para facilitar el registro de ingresos, egresos y costos fijos, proporcionando reportes claros y simples que ayuden al dueño en la toma de decisiones informadas. El énfasis en un enfoque mobile-first asegura que la plataforma sea accesible y fácil de usar en dispositivos móviles, lo cual es crucial para el entorno dinámico de una verdulería.\nLa propuesta de valor principal es ofrecer una solución económica y eficiente que permita a los dueños de la verdulería monitorear y gestionar sus operaciones diarias con facilidad. Esto se logra mediante un diseño intuitivo y funcionalidades clave que soportan las tareas administrativas esenciales. Los objetivos de negocio clave incluyen la mejora de la eficiencia operativa, la simplificación de procesos contables y la capacidad de obtener insights significativos sobre las operaciones diarias y mensuales.",
+    "executive_summary": "El proyecto \"Gestión Verde\" se centra en el desarrollo de un sistema web mobile-first para la gestión de dos locales de la Verdulería Apical & Don Rolo. Este sistema está diseñado para centralizar el registro de ingresos, egresos y costos fijos, ofreciendo reportes simples y claros para facilitar la toma de decisiones. La plataforma está compuesta por un frontend desarrollado en React y un backend en Node.js, utilizando una base de datos MySQL gestionada por Prisma, lo que permite una integración fluida y una experiencia de usuario optimizada.\nLa propuesta de valor principal del sistema es la unificación de los procesos financieros diarios de ambos locales, eliminando la necesidad de planillas dispersas y mensajes de chat como única fuente de verdad. Esto no solo habilita la toma de decisiones rápidas sobre ventas, gastos y disponibilidad de caja en tiempo real, sino que también proporciona una base extensible para futuras expansiones y automatizaciones.\nLos objetivos de negocio clave incluyen la mejora de la eficiencia operativa, la reducción de errores humanos en el registro de transacciones, y el fortalecimiento de la capacidad del negocio para crecer y adaptarse a nuevas tecnologías sin la necesidad de reescribir el núcleo del sistema.",
     "project_scope": {},
     "business_objectives": [],
     "identified_features": [],
     "suggested_modules": [],
     "tech_stack_recommendation": null,
-    "architecture_overview": "- **Patrón arquitectónico propuesto:** Monolito modular\n- **Componentes principales del sistema:** Autenticación, Gestión de Ingresos, Gestión de Egresos, Costos Fijos, Reportes\n- **Flujos de datos críticos:** Registro de transacciones y generación de reportes\n- **Integraciones externas:** Ninguna en el MVP\n- **Consideraciones de escalabilidad:** Posibilidad de migrar a una base de datos más robusta y un entorno de hosting en la nube en el futuro.",
+    "architecture_overview": "- **Patrón arquitectónico propuesto:** Monolito modular\n- **Componentes principales del sistema:** Frontend (React), Backend (Express), Base de Datos (MySQL)\n- **Flujos de datos críticos:** Registro de ingresos y egresos, generación de reportes\n- **Integraciones externas:** n8n para bot de WhatsApp\n- **Consideraciones de escalabilidad:** Escalar horizontalmente el backend y ajustar el almacenamiento según el crecimiento.",
     "resource_estimation": null,
     "timeline_estimation": null,
     "technical_risks": [],
     "business_risks": []
   },
+  "document_history": [
+    {
+      "filename": "README.md",
+      "uploaded_at": "2025-12-11T13:22:06.676410",
+      "version": 1,
+      "size": 12399,
+      "is_initial": false
+    }
+  ],
+  "analysis_version": 2,
+  "last_analysis_at": "2025-12-11T13:23:11.696099",
   "language_code": "es"
 }

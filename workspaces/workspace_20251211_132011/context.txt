@@ -1,0 +1,124 @@
+
+
+=================================================================================== Text Document: README.md ===
+# sist-control
+
+Plataforma integral para operar y auditar comercios con multiples locales. El repositorio combina una API desarrollada con FastAPI y un frontend en React + Vite dentro del mismo arbol `src/`, permitiendo correr un punto de venta (POS) para cajeros, flujos administrativos para dueños y reportes en tiempo real sobre inventario, compras y ventas.
+
+## Razon de ser
+- Unificar ventas, compras y stock de diferentes sucursales en un unico backend consistente.
+- Reducir errores operativos al ofrecer POS con soporte para productos por unidad o por peso (integrable con balanzas serias).
+- Dar visibilidad diaria/semanal de ganancias, ventas por local y alertas de bajo stock para que el dueño actue con tiempo.
+
+## Casos de uso clave
+- Dueños (`dueño_cliente`) administran clientes, locales, usuarios y proveedores, levantan ordenes de compra y revisan reportes.
+- Cajeros (`cajero_local`) venden desde el POS, leen productos pesables y realizan cierres de caja (`cierres_caja`).
+- Equipos de deposito controlan stock por local, siguen ordenes de compra y generan traspasos/recepciones.
+- Analistas consultan paneles (`/dashboard`) para detectar productos con bajo stock o mas vendidos.
+
+## Arquitectura de referencia
+Backend y frontend conviven en este monorepo y comparten contratos de datos en `src/`.
+
+```text
+React + Vite (TS, Tailwind) ──▶ REST (fetch services) ──▶ FastAPI
+                                              │
+                                              └─▶ MySQL (schema.sql + SQLAlchemy)
+```
+
+- **API FastAPI** (`src/main.py`) expone routers por dominio (`src/api/routers/*`) que delegan en repositories (`src/features/*`) y modelos SQLAlchemy (`src/models.py`).
+- **Frontend Vite** consume los endpoints con servicios (`src/services/*.ts`), mantiene el token en `localStorage` y enruta con `react-router-dom`.
+- **Balanza serial**: `leer_balanza.py` lee tickets por `ttyUSB0`, interpreta PLUs y envia datos al POS.
+
+## Tecnologias principales
+### Backend
+- Python 3.10+, FastAPI, Uvicorn (dev), SQLAlchemy, MySQL Connector, Pydantic, JWT (python-jose + passlib).
+### Frontend
+- React 18, TypeScript, Vite, TailwindCSS, react-router-dom, Recharts, lucide-react.
+### Herramientas auxiliares
+- `schema.sql` con la definicion de tablas y relaciones.
+- `src/seed.py` para poblar datos de ejemplo (clientes, locales, usuarios, productos, stock, ordenes, ventas).
+- Script `leer_balanza.py` para consumir balanzas y simular peso en el POS.
+
+## Estructura principal
+- `src/main.py`, `src/auth.py`, `src/security.py`: arranque FastAPI, dependencias de auth, generacion de JWT.
+- `src/api/routers/`: endpoints por dominio (`clientes`, `locales`, `proveedores`, `usuarios`, `productos_maestros`, `stock_local`, `ordenes_compra`, `ventas`, `cierres_caja`).
+- `src/features/`: capa de acceso a datos (repositories) usada por los routers y por `src/crud.py`.
+- `src/pages/` y `src/components/`: pantallas del POS, dashboard, gestion y cierres.
+- `src/services/`: cliente REST del frontend (auth, POS, dashboard, stock, compras, ventas, cierres).
+- `schema.sql`: esquema MySQL; `src/seed.py`: datos semilla.
+- `AGENTS*.md`: guias internas (backend, frontend y general).
+
+## Requisitos previos
+- Python 3.10+ y `virtualenv`.
+- Node.js 18+ y npm.
+- Servidor MySQL (8.x sugerido) con un schema disponible (por defecto `stock_control`).
+
+## Variables de entorno
+- Backend: copiar `.env.example` a `.env` y ajustar `DATABASE_URL` o campos (`DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME`) y `SECRET_KEY` para firmar JWT. `src/config/settings.py` carga el archivo al levantar FastAPI.
+- Frontend: `VITE_API_URL` en `.env.development` y `.env.production` (por defecto `http://127.0.0.1:8000`). Los valores `VITE_*` quedan embebidos en el bundle.
+
+## Puesta en marcha rapida
+### Backend (FastAPI)
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -U pip
+pip install fastapi uvicorn[standard] sqlalchemy mysql-connector-python python-jose[cryptography] passlib[bcrypt] pydantic-settings
+uvicorn src.main:app --reload --port 8000
+```
+- Documentacion interactiva: `http://127.0.0.1:8000/docs`.
+- Salud: `GET /` devuelve `{ "status": "ok" }`. `GET /db-check` confirma la conexion a MySQL.
+- Autenticacion: `POST /token` (form `username`/`password`) genera el JWT (`Authorization: Bearer <token>`).
+
+### Frontend (Vite)
+```bash
+npm install
+npm run dev       # http://127.0.0.1:5173
+npm run build     # genera dist/
+npm run preview   # sirve el build
+npm run typecheck # comprueba tipos opcionalmente
+```
+- El router redirige segun rol (dueño → `/dashboard`, cajero → `/pos`).
+- Servicios REST usan `import.meta.env.VITE_API_URL` o `http://localhost:8000` como respaldo.
+
+## Base de datos y datos semilla
+1. Crear base:
+```sql
+CREATE DATABASE stock_control CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+2. Importar `schema.sql`:
+```bash
+mysql -u <usuario> -p stock_control < schema.sql
+```
+3. Sembrar datos opcionales:
+```bash
+python -m src.seed            # crea clientes, locales, proveedores, usuarios demo, productos y stock
+python -m src.seed --force    # recrea tablas antes de insertar (destructivo)
+```
+
+## Funcionalidades destacadas
+- **POS omnicanal**: pagina `src/pages/POSSystem.tsx` soporta busquedas, carrito mixto por peso/unidad, lectura simulada desde balanza y envio de ventas o pedidos abiertos (`pos_orders`).
+- **Flujos administrativos**: pantallas en `src/pages/management` para productos, stock por local, proveedores, locales, usuarios y ordenes de compra (creacion, detalle y seguimiento).
+- **Reportes y analitica**: `src/pages/management/Dashboard.tsx` consume `dashboardService` para mostrar ganancias diarias/semanales, ventas por local, productos con poco stock y top ventas.
+- **Cierres de caja**: `src/pages/cashier/CierreDeCaja.tsx` orquesta arqueos diarios usando `closeoutService` y endpoints `cierres_caja`.
+- **API modular**: cada dominio posee router y repository dedicados facilitando extensiones (p. ej. agregar nuevos recursos o reglas de negocio).
+
+## Integracion con balanzas
+- El script `leer_balanza.py` abre un puerto serial (`/dev/ttyUSB0`, 9600 baud), limpia tickets impresos, extrae PLUs, peso y totales, y envia `ACK` a la balanza. Puede adaptarse para alimentar el POS real en vez de la simulacion `setWaitingForWeight`.
+- Para pruebas rapidas se incluye una simulacion en el POS que genera pesos aleatorios; en produccion se sugiere comunicar el script con el frontend (WebSocket, HTTP local o archivo compartido).
+
+## Pruebas y validacion rapida
+- **Backend**: solicitar token (`POST /token`), consumir `GET /clientes/`, `GET /locales/` y endpoints del dashboard; revisar trazas en consola Uvicorn.
+- **Frontend**: verificar login, flujo POS completo y navegacion de modulos; `npm run typecheck` ayuda a detectar incompatibilidades de datos.
+- **Infra**: `mysqladmin ping` o `GET /db-check` confirma la base, mientras que `python -m src.seed` valida que el esquema sea consistente.
+
+## Recursos adicionales
+- `AGENTS.md`: panorama general y acuerdos de trabajo.
+- `AGENTS_BACKEND.md`: mapa del backend, dependencias y recetas comunes.
+- `AGENTS_FRONTEND.md`: convenciones de UI, rutas y servicios.
+- `GEMINI.md`: notas experimentales.
+
+Mantener este README actualizado cuando se agreguen nuevos comandos, servicios o integraciones evitara desalineaciones entre los equipos de backend y frontend.
+
+
+================================================================================

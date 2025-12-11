@@ -7,6 +7,19 @@ from typing import Optional, List
 from datetime import datetime
 
 
+class DocumentVersion(BaseModel):
+    """Versión de un documento con metadata"""
+    filename: str
+    uploaded_at: str
+    version: int = 1  # Incremental por cada actualización del mismo archivo
+    size: int
+    is_initial: bool = True  # True si fue parte de la creación inicial
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON storage"""
+        return self.model_dump()
+
+
 class ModuleSuggestion(BaseModel):
     """Sugerencia de módulo para el proyecto"""
     name: str  # "Authentication", "Payment Gateway", etc.
@@ -90,6 +103,11 @@ class Workspace(BaseModel):
     
     # Análisis (se genera después de procesar documentos)
     analysis: Optional[WorkspaceAnalysis] = None
+    
+    # Historial de documentos
+    document_history: List[DocumentVersion] = []
+    analysis_version: int = 1  # Versión del análisis actual
+    last_analysis_at: Optional[str] = None
     
     # Configuración
     language_code: Optional[str] = None

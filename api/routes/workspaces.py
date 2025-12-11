@@ -10,7 +10,7 @@ import json
 import shutil
 from datetime import datetime
 
-from api.models.workspace import Workspace, WorkspaceAnalysis
+from api.models.workspace import Workspace, WorkspaceAnalysis, DocumentVersion
 from api.services.workspace_processor import WorkspaceProcessor
 
 router = APIRouter()
@@ -43,6 +43,10 @@ class WorkspaceDetail(BaseModel):
     updated_at: str
     features: List[str]
     analysis: Optional[Dict] = None
+    document_history: Optional[List[Dict]] = None
+    analysis_version: Optional[int] = None
+    last_analysis_at: Optional[str] = None
+    documents_processed: Optional[bool] = None
 
 
 class CreateWorkspaceRequest(BaseModel):
@@ -119,6 +123,7 @@ async def create_workspace(
     documents_dir.mkdir(exist_ok=True)
     
     saved_files = []
+    document_history = []
     for file in files:
         # Validar tipo de archivo
         allowed_extensions = {'.pdf', '.txt', '.md', '.docx'}
@@ -131,11 +136,24 @@ async def create_workspace(
         
         # Guardar archivo
         file_path = documents_dir / file.filename
+        file_size = 0
         with open(file_path, 'wb') as f:
             shutil.copyfileobj(file.file, f)
+            file_size = file_path.stat().st_size
+        
         saved_files.append(file.filename)
+        
+        # Añadir a historial como documento inicial
+        document_history.append(DocumentVersion(
+            filename=file.filename,
+            uploaded_at=datetime.now().isoformat(),
+            version=1,
+            size=file_size,
+            is_initial=True
+        ))
     
     workspace.context_documents = saved_files
+    workspace.document_history = document_history
     
     # Guardar estado del workspace
     processor.save_workspace(workspace)
@@ -175,19 +193,112 @@ async def get_workspace(workspace_id: str):
         created_at=workspace.created_at,
         updated_at=workspace.updated_at,
         features=workspace.features,
-        analysis=workspace.analysis.to_dict() if workspace.analysis else None
+        analysis=workspace.analysis.to_dict() if workspace.analysis else None,
+        document_history=[doc.to_dict() for doc in workspace.document_history] if workspace.document_history else None,
+        analysis_version=workspace.analysis_version,
+        last_analysis_at=workspace.last_analysis_at,
+        documents_processed=workspace.documents_processed
     )
 
 
+@router.post("/{workspace_id}/documents")
+async def add_documents(
+    workspace_id: str,
+    files: List[UploadFile] = File(...),
+    notes: Optional[str] = Form(None)
+):
+    """Añade documentos adicionales al workspace"""
+    workspace = processor.load_workspace(workspace_id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    
+    if not files:
+        raise HTTPException(status_code=400, detail="At least one file is required")
+    
+    workspace_dir = WORKSPACES_DIR / workspace_id
+    documents_dir = workspace_dir / "documents"
+    documents_dir.mkdir(exist_ok=True)
+    
+    # Obtener nombres de archivos existentes para detectar duplicados
+    existing_files = {doc.filename for doc in workspace.document_history}
+    
+    saved_files = []
+    for file in files:
+        # Validar tipo de archivo
+        allowed_extensions = {'.pdf', '.txt', '.md', '.docx'}
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File type {file_ext} not allowed. Allowed: {', '.join(allowed_extensions)}"
+            )
+        
+        # Determinar nombre del archivo (si existe, incrementar versión)
+        base_filename = file.filename
+        if base_filename in existing_files:
+            # Encontrar la versión más alta de este archivo
+            versions = [doc.version for doc in workspace.document_history 
+                       if doc.filename.startswith(base_filename.rsplit('.', 1)[0])]
+            max_version = max(versions) if versions else 1
+            new_version = max_version + 1
+            
+            # Crear nombre con versión
+            name_parts = base_filename.rsplit('.', 1)
+            versioned_filename = f"{name_parts[0]}_v{new_version}.{name_parts[1]}"
+        else:
+            versioned_filename = base_filename
+            new_version = 1
+        
+        # Guardar archivo
+        file_path = documents_dir / versioned_filename
+        file_size = 0
+        with open(file_path, 'wb') as f:
+            shutil.copyfileobj(file.file, f)
+            file_size = file_path.stat().st_size
+        
+        saved_files.append(versioned_filename)
+        
+        # Añadir a historial como documento nuevo
+        workspace.document_history.append(DocumentVersion(
+            filename=versioned_filename,
+            uploaded_at=datetime.now().isoformat(),
+            version=new_version,
+            size=file_size,
+            is_initial=False
+        ))
+        
+        # Actualizar lista de documentos
+        if versioned_filename not in workspace.context_documents:
+            workspace.context_documents.append(versioned_filename)
+    
+    # Marcar que necesita re-análisis
+    workspace.documents_processed = False
+    workspace.updated_at = datetime.now().isoformat()
+    processor.save_workspace(workspace)
+    
+    return {
+        "status": "success",
+        "files_added": saved_files,
+        "total_documents": len(workspace.context_documents),
+        "requires_reanalysis": True,
+        "message": f"Added {len(saved_files)} document(s). Re-analysis recommended."
+    }
+
+
 @router.post("/{workspace_id}/analyze")
-async def analyze_workspace(workspace_id: str):
+async def analyze_workspace(
+    workspace_id: str,
+    merge_with_existing: bool = True
+):
     """Analiza los documentos del workspace con AI"""
     try:
-        result = processor.analyze_workspace(workspace_id)
+        result = processor.analyze_workspace(workspace_id, merge_with_existing=merge_with_existing)
         return {
             "status": "success",
             "message": "Workspace analyzed successfully",
-            "analysis": result
+            "analysis": result,
+            "merged": merge_with_existing,
+            "analysis_version": result.get("analysis_version", 1)
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

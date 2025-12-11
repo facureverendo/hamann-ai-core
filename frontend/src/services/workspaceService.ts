@@ -12,6 +12,14 @@ export interface Workspace {
   features_count: number
 }
 
+export interface DocumentVersion {
+  filename: string
+  uploaded_at: string
+  version: number
+  size: number
+  is_initial: boolean
+}
+
 export interface WorkspaceDetail {
   id: string
   name: string
@@ -23,6 +31,10 @@ export interface WorkspaceDetail {
   updated_at: string
   features: string[]
   analysis: WorkspaceAnalysis | null
+  document_history: DocumentVersion[] | null
+  analysis_version: number | null
+  last_analysis_at: string | null
+  documents_processed: boolean | null
 }
 
 export interface ModuleSuggestion {
@@ -111,6 +123,48 @@ export const workspaceService = {
     analysis: any
   }> {
     const response = await apiClient.post(`/api/workspaces/${workspaceId}/analyze`)
+    return response.data
+  },
+
+  async reAnalyzeWorkspace(
+    workspaceId: string,
+    mergeWithExisting: boolean = true
+  ): Promise<{
+    status: string
+    message: string
+    analysis: any
+    merged: boolean
+    analysis_version: number
+  }> {
+    const response = await apiClient.post(
+      `/api/workspaces/${workspaceId}/analyze?merge_with_existing=${mergeWithExisting}`
+    )
+    return response.data
+  },
+
+  // Añadir documentos
+  async addDocuments(
+    workspaceId: string,
+    files: File[],
+    notes?: string
+  ): Promise<{
+    status: string
+    files_added: string[]
+    total_documents: number
+    requires_reanalysis: boolean
+    message: string
+  }> {
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+    if (notes) {
+      formData.append('notes', notes)
+    }
+    
+    const response = await apiClient.post(
+      `/api/workspaces/${workspaceId}/documents`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
     return response.data
   },
 
