@@ -1,0 +1,99 @@
+
+
+=================================================================================== PDF Document: Presupuesto Detallado.pdf ===
+--- Page 1 ---
+Presupuesto  Detallado  Sistema  de  Gestión  para  
+Verdulerías“Apical
+ 
+&
+ 
+Don
+ 
+Rolo”
+ 
+ Desarrollador:  Facundo  Reverendo  Cliente:  Verdulería  Apical  &  Don  Rolo  Fecha:  31  de  octubre  de  2025  Presupuesto  total:  USD  500  (No  incluye  hosting,  dominio  ni  infraestructura  de  servidor)   
+ 1.  Objetivo  del  proyecto 
+Desarrollar  un  sistema  web  mobile-first  de  gestión  para  los  dos  locales  de  la  verdulería,  
+que
+ 
+permita
+ 
+registrar
+ 
+ingresos,
+ 
+egresos
+ 
+y
+ 
+costos
+ 
+fijos,
+ 
+y
+ 
+ofrecer
+ 
+reportes
+ 
+simples
+ 
+y
+ 
+claros
+ 
+al
+ 
+dueño.
+  
+2.  Alcance  funcional  (Fase  1  –  MVP)  
+Roles  de  usuario   Dueño  /  Administrador  
+●  Acceso  total  a  todas  las  funciones.  ●  Visualización  de  reportes  diarios,  mensuales  y  por  local.  ●  Registro  y  edición  de  costos  fijos  (alquiler,  servicios,  salarios,  etc.).  
+Cajero  
+●  Carga  rápida  de  ingresos  (ventas)  con  tipo  de  pago.  ●  Carga  de  egresos  (proveedores,  sueldos,  gastos  diarios)  con  posibilidad  de  
+fraccionar
+ 
+medios
+ 
+de
+ 
+pago.
+ ●  Autoregistro  de  pago  diario  (sueldos).  
+Módulos  
+●  Autenticación  y  roles:  login  simple  con  JWT.  ●  Gestión  de  ingresos:  monto  +  tipo  de  pago  (efectivo,  tarjeta,  MP,  transferencia).  ●  Gestión  de  egresos:  monto  +  tipo(s)  de  pago,  posibilidad  de  varios  métodos  
+combinados.
+ ●  Costos  fijos:  solo  visibles  y  editables  por  el  dueño.  ●  Reportes:  resumen  por  local,  por  día  y  por  tipo  de  transacción.  ●  Dashboard  mobile-first:  navegación  rápida,  botones  grandes  e  interfaz  táctil  
+intuitiva.
+ 
+
+--- Page 2 ---
+3.  Stack  técnico  
+Capa  Tecnología  
+Frontend  React  18  +  Vite  /  Tailwind  CSS  
+Backend  Node.js  +  Express  
+Base  de  datos  SQLite  (versión  local)  
+Autenticación  JWT  
+Diseño  Mobile  first  +  responsive  (compatible  con  tablets  y  desktop)    
+4.  Etapas  y  plazos  estimados  
+Etapa  Descripción  Duración  estimada  
+1  Diseño  de  arquitectura  y  setup  inicial  (frontend  +  backend  +  DB)  
+ 3 días
+2  Módulos  de  ingresos  y  egresos  (mobile)  
+ 4 días
+3  Autenticación  y  control  de  roles   2 días
+4  Costos  fijos  y  reportes  básicos   3 días
+5  Pruebas,  ajustes  visuales  y  deploy  local  /  demo  
+ 2 días
+ Duración  total  estimada:  14  días  hábiles   
+5.  Inversión  
+ Desarrollo  integral  MVP  (frontend  +  backend  +  base  de  datos  local)  Incluye  diseño  mobile-first,  funcionalidades  completas  para  ambos  roles  y  reportería  básica.   Monto  total:  USD  500   💡  El  monto  incluye:  análisis  funcional,  desarrollo,  pruebas  y  deploy  en  entorno  local  o  
+demo
+ 
+temporal.
+ 💡  No  incluye:  hosting,  dominio,  SSL,  mantenimiento  mensual  ni  soporte  técnico  continuo.  
+
+--- Page 3 ---
+6.  Exclusiones  
+●  Hosting  /  VPS  /  dominio  /  certificados  SSL  ●  Integración  con  sistemas  de  facturación  o  POS  externos  ●  Diseño  gráfico  avanzado  (branding,  UI  personalizado  más  allá  del  MVP)  ●  Reportes  avanzados  (gráficos  comparativos,  dashboards  BI)  
+
+================================================================================

@@ -1,0 +1,29 @@
+{
+  "id": "workspace_20251211_124557",
+  "name": "Sistema gestion verde",
+  "description": "Este es un producto que pide un cliente, apra poder gestionar  sus dos locales de verduleria. La idea es poder tener control de ingresos, egresos, costos fijos, cual es el punto de equilibrio del negocio, etc",
+  "type": "software_factory",
+  "created_at": "2025-12-11T12:45:57.285802",
+  "updated_at": "2025-12-11T12:46:58.330308",
+  "features": [],
+  "context_documents": [
+    "Presupuesto Detallado.pdf"
+  ],
+  "documents_processed": true,
+  "analysis_completed": true,
+  "analysis": {
+    "workspace_id": "workspace_20251211_124557",
+    "executive_summary": "El proyecto se centra en el desarrollo de un sistema web mobile-first para gestionar los dos locales de la Verdulería Apical & Don Rolo. Este sistema está diseñado para facilitar el registro de ingresos, egresos y costos fijos, proporcionando reportes claros y simples que ayuden al dueño en la toma de decisiones informadas. El énfasis en un enfoque mobile-first asegura que la plataforma sea accesible y fácil de usar en dispositivos móviles, lo cual es crucial para el entorno dinámico de una verdulería.\nLa propuesta de valor principal es ofrecer una solución económica y eficiente que permita a los dueños de la verdulería monitorear y gestionar sus operaciones diarias con facilidad. Esto se logra mediante un diseño intuitivo y funcionalidades clave que soportan las tareas administrativas esenciales. Los objetivos de negocio clave incluyen la mejora de la eficiencia operativa, la simplificación de procesos contables y la capacidad de obtener insights significativos sobre las operaciones diarias y mensuales.",
+    "project_scope": {},
+    "business_objectives": [],
+    "identified_features": [],
+    "suggested_modules": [],
+    "tech_stack_recommendation": null,
+    "architecture_overview": "- **Patrón arquitectónico propuesto:** Monolito modular\n- **Componentes principales del sistema:** Autenticación, Gestión de Ingresos, Gestión de Egresos, Costos Fijos, Reportes\n- **Flujos de datos críticos:** Registro de transacciones y generación de reportes\n- **Integraciones externas:** Ninguna en el MVP\n- **Consideraciones de escalabilidad:** Posibilidad de migrar a una base de datos más robusta y un entorno de hosting en la nube en el futuro.",
+    "resource_estimation": null,
+    "timeline_estimation": null,
+    "technical_risks": [],
+    "business_risks": []
+  },
+  "language_code": "es"
+}

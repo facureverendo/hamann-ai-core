@@ -1,11 +1,48 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import GlassCard from '../components/ui/GlassCard'
-import { Github, Slack, GitBranch, CheckCircle2 } from 'lucide-react'
+import NeonButton from '../components/ui/NeonButton'
+import { Github, Slack, GitBranch, CheckCircle2, Save, Loader2 } from 'lucide-react'
+import { settingsService, type AppSettings } from '../services/settingsService'
 
 export default function Settings() {
   const [autoSummarization, setAutoSummarization] = useState(true)
   const [memoryDepth, setMemoryDepth] = useState(7)
   const [riskSensitivity, setRiskSensitivity] = useState(75)
+  
+  // App Settings
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null)
+  const [loadingSettings, setLoadingSettings] = useState(true)
+  const [savingSettings, setSavingSettings] = useState(false)
+
+  useEffect(() => {
+    loadAppSettings()
+  }, [])
+
+  const loadAppSettings = async () => {
+    try {
+      const data = await settingsService.getSettings()
+      setAppSettings(data)
+    } catch (error) {
+      console.error('Error loading settings:', error)
+    } finally {
+      setLoadingSettings(false)
+    }
+  }
+
+  const handleSaveAppSettings = async () => {
+    if (!appSettings) return
+    
+    setSavingSettings(true)
+    try {
+      await settingsService.updateSettings(appSettings)
+      alert('Configuración guardada exitosamente')
+    } catch (error: any) {
+      console.error('Error saving settings:', error)
+      alert(error.response?.data?.detail || 'Error guardando configuración')
+    } finally {
+      setSavingSettings(false)
+    }
+  }
 
   const integrations = [
     { id: 'github', name: 'GitHub', icon: Github, enabled: true },
@@ -19,6 +56,103 @@ export default function Settings() {
       {/* Main Settings */}
       <div className="flex-1 space-y-6">
         <h1 className="text-2xl font-bold text-white">Project Intelligence Settings</h1>
+
+        {/* App Modes Configuration */}
+        <GlassCard className="p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Configuración de Modos</h3>
+          <p className="text-sm text-gray-400 mb-6">
+            Configura qué modos de trabajo están disponibles en la aplicación
+          </p>
+          
+          {loadingSettings ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 text-neon-blue animate-spin" />
+            </div>
+          ) : appSettings && (
+            <div className="space-y-6">
+              {/* Software Factory Mode */}
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h4 className="text-md font-medium text-white mb-1">Modo Software Factory</h4>
+                  <p className="text-sm text-gray-400">
+                    Permite crear proyectos completos desde cero con análisis comprehensivo
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <input
+                    type="checkbox"
+                    checked={appSettings.show_software_factory_mode}
+                    onChange={(e) => setAppSettings({
+                      ...appSettings,
+                      show_software_factory_mode: e.target.checked
+                    })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-purple"></div>
+                </label>
+              </div>
+
+              {/* Product Mode */}
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h4 className="text-md font-medium text-white mb-1">Modo Producto</h4>
+                  <p className="text-sm text-gray-400">
+                    Permite añadir features/PRDs a proyectos existentes
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <input
+                    type="checkbox"
+                    checked={appSettings.show_product_mode}
+                    onChange={(e) => setAppSettings({
+                      ...appSettings,
+                      show_product_mode: e.target.checked
+                    })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-cyan"></div>
+                </label>
+              </div>
+
+              {/* Default Mode */}
+              <div>
+                <h4 className="text-md font-medium text-white mb-2">Modo por Defecto</h4>
+                <select
+                  value={appSettings.default_mode}
+                  onChange={(e) => setAppSettings({
+                    ...appSettings,
+                    default_mode: e.target.value
+                  })}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-neon-blue"
+                >
+                  <option value="product">Modo Producto</option>
+                  <option value="software_factory">Modo Software Factory</option>
+                </select>
+              </div>
+
+              {/* Save Button */}
+              <div className="pt-4">
+                <NeonButton
+                  onClick={handleSaveAppSettings}
+                  disabled={savingSettings}
+                  className="w-full"
+                >
+                  {savingSettings ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Guardar Configuración
+                    </>
+                  )}
+                </NeonButton>
+              </div>
+            </div>
+          )}
+        </GlassCard>
 
         {/* AI Auto-summarization */}
         <GlassCard className="p-6">

@@ -8,11 +8,14 @@ from datetime import datetime
 
 
 class ProjectState(BaseModel):
-    """State of a project's processing steps"""
+    """State of a project's processing steps (Feature/PRD)"""
     project_id: str
     project_name: str
     created_at: str
     updated_at: str
+    
+    # Workspace reference (None for standalone features)
+    workspace_id: Optional[str] = None
     
     # Processing steps status
     inputs_processed: bool = False

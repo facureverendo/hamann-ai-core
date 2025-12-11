@@ -1,66 +1,197 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProjects } from '../hooks/useProjects'
 import GlassCard from '../components/ui/GlassCard'
 import NeonButton from '../components/ui/NeonButton'
-import { TrendingUp, Calendar, AlertTriangle, MessageSquare, Send, Plus, FolderKanban, ArrowRight } from 'lucide-react'
+import CreateItemSelector from '../components/CreateItemSelector'
+import { TrendingUp, Calendar, AlertTriangle, MessageSquare, Send, Plus, FolderKanban, ArrowRight, FolderOpen } from 'lucide-react'
+import { workspaceService, type Workspace } from '../services/workspaceService'
+import { settingsService } from '../services/settingsService'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { projects, loading } = useProjects()
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [loadingWorkspaces, setLoadingWorkspaces] = useState(true)
+  const [activeTab, setActiveTab] = useState<'workspaces' | 'features'>('workspaces')
+  const [showCreateSelector, setShowCreateSelector] = useState(false)
+  const [showWorkspaces, setShowWorkspaces] = useState(true)
+  const [showFeatures, setShowFeatures] = useState(true)
+
+  useEffect(() => {
+    loadWorkspaces()
+    loadSettings()
+  }, [])
+
+  const loadWorkspaces = async () => {
+    try {
+      const data = await workspaceService.listWorkspaces()
+      setWorkspaces(data)
+    } catch (error) {
+      console.error('Error loading workspaces:', error)
+    } finally {
+      setLoadingWorkspaces(false)
+    }
+  }
+
+  const loadSettings = async () => {
+    try {
+      const settings = await settingsService.getSettings()
+      setShowWorkspaces(settings.show_software_factory_mode)
+      setShowFeatures(settings.show_product_mode)
+      
+      // Set default tab based on settings
+      if (settings.default_mode === 'software_factory' && settings.show_software_factory_mode) {
+        setActiveTab('workspaces')
+      } else if (settings.show_product_mode) {
+        setActiveTab('features')
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error)
+    }
+  }
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       {/* Header with Create Button */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <NeonButton onClick={() => navigate('/projects/new')}>
+        <NeonButton onClick={() => setShowCreateSelector(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Nuevo Proyecto
+          Nuevo
         </NeonButton>
       </div>
 
-      {/* Recent Projects Section */}
-      {!loading && projects.length > 0 && (
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <FolderKanban className="w-5 h-5 text-neon-blue" />
-              Proyectos Recientes
-            </h2>
-            <button
-              onClick={() => navigate('/projects')}
-              className="text-sm text-neon-cyan hover:text-neon-blue transition flex items-center gap-1"
-            >
-              Ver todos
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.slice(0, 6).map((project) => (
-              <div
-                key={project.id}
-                onClick={() => navigate(`/projects/${project.id}`)}
-                className="p-4 glass-card rounded-lg hover:bg-white/5 transition cursor-pointer"
-              >
-                <h3 className="text-sm font-medium text-white mb-2 truncate">
-                  {project.name}
-                </h3>
-                <div className="flex items-center justify-between">
-                  <div className="h-1.5 flex-1 bg-dark-secondary rounded-full overflow-hidden mr-2">
-                    <div
-                      className="h-full bg-neon-cyan transition-all"
-                      style={{ width: `${project.progress * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-400">
-                    {Math.round(project.progress * 100)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
+      {/* Tabs */}
+      {showWorkspaces && showFeatures && (
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('workspaces')}
+            className={`px-4 py-2 rounded-lg transition ${
+              activeTab === 'workspaces'
+                ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/50'
+                : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
+            }`}
+          >
+            <FolderOpen className="w-4 h-4 inline mr-2" />
+            Proyectos
+          </button>
+          <button
+            onClick={() => setActiveTab('features')}
+            className={`px-4 py-2 rounded-lg transition ${
+              activeTab === 'features'
+                ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50'
+                : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
+            }`}
+          >
+            <FolderKanban className="w-4 h-4 inline mr-2" />
+            Features Standalone
+          </button>
+        </div>
       )}
+
+      {/* Workspaces Section */}
+      {activeTab === 'workspaces' && showWorkspaces && (
+        <>
+          {!loadingWorkspaces && workspaces.length > 0 && (
+            <GlassCard className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <FolderOpen className="w-5 h-5 text-neon-purple" />
+                  Proyectos Recientes
+                </h2>
+                <button
+                  onClick={() => navigate('/workspaces')}
+                  className="text-sm text-neon-cyan hover:text-neon-blue transition flex items-center gap-1"
+                >
+                  Ver todos
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {workspaces.slice(0, 6).map((workspace) => (
+                  <div
+                    key={workspace.id}
+                    onClick={() => navigate(`/workspaces/${workspace.id}`)}
+                    className="p-4 glass-card rounded-lg hover:bg-white/5 transition cursor-pointer"
+                  >
+                    <h3 className="text-sm font-medium text-white mb-2 truncate">
+                      {workspace.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-3 line-clamp-2">
+                      {workspace.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="h-1.5 flex-1 bg-dark-secondary rounded-full overflow-hidden mr-2">
+                        <div
+                          className="h-full bg-neon-purple transition-all"
+                          style={{ width: `${workspace.progress * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {Math.round(workspace.progress * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+        </>
+      )}
+
+      {/* Features Section */}
+      {activeTab === 'features' && showFeatures && (
+        <>
+          {!loading && projects.length > 0 && (
+            <GlassCard className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <FolderKanban className="w-5 h-5 text-neon-cyan" />
+                  Features Recientes
+                </h2>
+                <button
+                  onClick={() => navigate('/projects')}
+                  className="text-sm text-neon-cyan hover:text-neon-blue transition flex items-center gap-1"
+                >
+                  Ver todos
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.slice(0, 6).map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                    className="p-4 glass-card rounded-lg hover:bg-white/5 transition cursor-pointer"
+                  >
+                    <h3 className="text-sm font-medium text-white mb-2 truncate">
+                      {project.name}
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <div className="h-1.5 flex-1 bg-dark-secondary rounded-full overflow-hidden mr-2">
+                        <div
+                          className="h-full bg-neon-cyan transition-all"
+                          style={{ width: `${project.progress * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {Math.round(project.progress * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+        </>
+      )}
+
+      {/* Create Item Selector Modal */}
+      <CreateItemSelector
+        isOpen={showCreateSelector}
+        onClose={() => setShowCreateSelector(false)}
+      />
       {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-4">
         <GlassCard className="p-6">

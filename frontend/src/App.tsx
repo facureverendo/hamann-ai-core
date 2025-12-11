@@ -11,6 +11,9 @@ import AITimeline from './pages/AITimeline'
 import RiskRadar from './pages/RiskRadar'
 import AIAssistant from './pages/AIAssistant'
 import Settings from './pages/Settings'
+import WorkspaceList from './pages/WorkspaceList'
+import WorkspaceDetail from './pages/WorkspaceDetail'
+import CreateWorkspace from './pages/CreateWorkspace'
 
 function App() {
   return (
@@ -22,13 +25,24 @@ function App() {
           <main className="flex-1 overflow-y-auto">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              
+              {/* Workspaces Routes */}
+              <Route path="/workspaces" element={<WorkspaceList />} />
+              <Route path="/workspaces/new" element={<CreateWorkspace />} />
+              <Route path="/workspaces/:id" element={<WorkspaceDetail />} />
+              
+              {/* Projects/Features Routes */}
               <Route path="/projects" element={<ProjectsList />} />
               <Route path="/projects/new" element={<CreateProject />} />
               <Route path="/projects/:id" element={<ProjectOverview />} />
+              
+              {/* PRD and other feature routes */}
               <Route path="/prd/:id" element={<PRDViewer />} />
               <Route path="/meetings/:id" element={<MeetingSummary />} />
               <Route path="/timeline/:id" element={<AITimeline />} />
               <Route path="/risks/:id" element={<RiskRadar />} />
+              
+              {/* Global routes */}
               <Route path="/assistant" element={<AIAssistant />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>

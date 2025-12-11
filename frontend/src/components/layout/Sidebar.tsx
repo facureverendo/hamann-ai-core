@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard, 
-  FolderKanban, 
+  FolderKanban,
+  FolderOpen,
   Video, 
   FileText, 
   Brain, 
@@ -11,7 +12,8 @@ import {
 
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/projects', icon: FolderKanban, label: 'Projects' },
+  { path: '/workspaces', icon: FolderOpen, label: 'Workspaces' },
+  { path: '/projects', icon: FolderKanban, label: 'Features' },
   { path: '/meetings', icon: Video, label: 'Meetings' },
   { path: '/prd', icon: FileText, label: 'PRDs' },
   { path: '/assistant', icon: Brain, label: 'AI Insights' },
