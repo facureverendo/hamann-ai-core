@@ -758,3 +758,143 @@ async def finalize_interactive_session(project_id: str):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error finalizing session: {str(e)}")
+
+
+# ========================
+# VERSIONING ENDPOINTS
+# ========================
+
+@router.post("/{project_id}/sources")
+async def add_sources(
+    project_id: str,
+    version_notes: str = Form(""),
+    files: List[UploadFile] = File(...)
+):
+    """Add additional source files to existing project"""
+    try:
+        if not files:
+            raise HTTPException(status_code=400, detail="At least one file is required")
+        
+        # Get current state
+        state = processor.load_state(project_id)
+        if not state:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Validate that initial PRD exists
+        if not state.prd_built:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot add sources before first PRD is built. Complete initial processing first."
+            )
+        
+        project_dir = processor.get_project_dir(project_id)
+        next_version = state.current_version + 1
+        
+        # Create versioned inputs directory
+        new_inputs_dir = project_dir / f"inputs_v{next_version}"
+        new_inputs_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Validate and save files
+        allowed_extensions = {'.pdf', '.txt', '.md', '.mp3', '.mp4', '.wav', '.m4a', '.ogg', '.flac'}
+        saved_files = []
+        
+        for file in files:
+            file_ext = Path(file.filename).suffix.lower()
+            if file_ext not in allowed_extensions:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File type {file_ext} not allowed. Allowed: {', '.join(allowed_extensions)}"
+                )
+            
+            # Save file
+            file_path = new_inputs_dir / file.filename
+            with open(file_path, 'wb') as f:
+                shutil.copyfileobj(file.file, f)
+            saved_files.append({"name": file.filename, "size": file_path.stat().st_size})
+        
+        # Register new sources (does not reprocess yet)
+        result = processor.add_additional_sources(
+            project_id,
+            saved_files,
+            version_notes
+        )
+        
+        return {
+            "status": "success",
+            **result
+        }
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = f"Error adding sources: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=f"Error adding sources: {str(e)}")
+
+
+@router.post("/{project_id}/reprocess")
+async def reprocess_project(project_id: str, max_questions: int = 15):
+    """Reprocess project with all sources and generate new PRD version"""
+    try:
+        result = processor.reprocess_with_new_sources(project_id, max_questions)
+        return {
+            "status": "success",
+            "message": f"Project reprocessed successfully. PRD v{result['version']} generated.",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = f"Error reprocessing project: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=f"Error reprocessing project: {str(e)}")
+
+
+@router.get("/{project_id}/versions")
+async def get_versions(project_id: str):
+    """Get version history for a project"""
+    try:
+        result = processor.get_version_history(project_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting versions: {str(e)}")
+
+
+@router.get("/{project_id}/prd/v/{version}")
+async def get_prd_version(project_id: str, version: int):
+    """Get PRD for a specific version"""
+    try:
+        result = processor.get_prd_version(project_id, version)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting PRD version: {str(e)}")
+
+
+class CompareVersionsRequest(BaseModel):
+    version1: int
+    version2: int
+
+
+@router.post("/{project_id}/versions/compare")
+async def compare_versions(project_id: str, request: CompareVersionsRequest):
+    """Compare two PRD versions"""
+    try:
+        result = processor.compare_versions(project_id, request.version1, request.version2)
+        return {
+            "status": "success",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = f"Error comparing versions: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=f"Error comparing versions: {str(e)}")

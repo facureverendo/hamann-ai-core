@@ -23,6 +23,7 @@ from src.exporter import export_backlog
 from src.language_detector import detect_language
 from src.diagram_generator import add_diagrams_to_prd
 from api.models.project_state import ProjectState
+from api.services.version_manager import VersionManager
 
 load_dotenv()
 
@@ -656,5 +657,324 @@ class ProjectProcessor:
             "answered_count": state.questions_answered_count,
             "skipped_count": state.questions_skipped_count,
             "total_questions": state.questions_count
+        }
+    
+    # ========================
+    # VERSIONING METHODS
+    # ========================
+    
+    def add_additional_sources(self, project_id: str, files_info: List[Dict], version_notes: str = "") -> Dict:
+        """Add additional source files to an existing project (does not reprocess)"""
+        state = self.load_state(project_id)
+        if not state:
+            raise ValueError(f"Project {project_id} not found")
+        
+        # Ensure at least version 1 exists (PRD has been built once)
+        if not state.prd_built:
+            raise ValueError("Cannot add sources before first PRD is built. Complete initial processing first.")
+        
+        project_dir = self.get_project_dir(project_id)
+        
+        # Determine next version number
+        next_version = state.current_version + 1
+        
+        # Create versioned inputs directory
+        new_inputs_dir = project_dir / f"inputs_v{next_version}"
+        new_inputs_dir.mkdir(exist_ok=True)
+        
+        # Files are already saved by the upload endpoint, we just need to track them
+        file_names = [f["name"] for f in files_info]
+        
+        # Create version manager
+        version_manager = VersionManager(project_dir, self.client)
+        
+        # Create metadata (without processing yet)
+        metadata = version_manager.create_version_metadata(
+            version=next_version,
+            files_added=file_names,
+            notes=version_notes,
+            gaps_detected=0,  # Will be updated when reprocessed
+            questions_generated=0
+        )
+        
+        # Update state - increment version but don't mark as processed yet
+        state.current_version = next_version
+        state.version_history.append({
+            "version": next_version,
+            "action": "sources_added",
+            "timestamp": datetime.now().isoformat(),
+            "notes": version_notes,
+            "files_added": file_names
+        })
+        
+        # Reset processing flags for new version (needs reprocessing)
+        state.inputs_processed = False
+        state.gaps_analyzed = False
+        state.prd_built = False
+        state.updated_at = datetime.now().isoformat()
+        
+        self.save_state(state)
+        
+        return {
+            "new_version": next_version,
+            "files_added": len(file_names),
+            "files": file_names,
+            "notes": version_notes,
+            "message": f"Sources added to version {next_version}. Use 'reprocess' endpoint to generate new PRD version."
+        }
+    
+    def reprocess_with_new_sources(self, project_id: str, max_questions: int = 15) -> Dict:
+        """Reprocess project with all sources (including new ones) and generate new PRD version"""
+        state = self.load_state(project_id)
+        if not state:
+            raise ValueError(f"Project {project_id} not found")
+        
+        project_dir = self.get_project_dir(project_id)
+        current_version = state.current_version
+        
+        # Collect all input directories
+        all_inputs_dirs = [project_dir / "inputs"]
+        for v in range(2, current_version + 1):
+            version_dir = project_dir / f"inputs_v{v}"
+            if version_dir.exists():
+                all_inputs_dirs.append(version_dir)
+        
+        # Process all inputs together
+        print(f"🔄 Reprocessing project with {len(all_inputs_dirs)} input directories...")
+        all_contexts = []
+        for inputs_dir in all_inputs_dirs:
+            if inputs_dir.exists() and any(inputs_dir.iterdir()):
+                context = process_inputs_folder(str(inputs_dir), self.client)
+                all_contexts.append(context)
+        
+        if not all_contexts:
+            raise ValueError("No input files found to process")
+        
+        # Combine contexts
+        unified_context = "\n\n=== ADDITIONAL SOURCES ===\n\n".join(all_contexts)
+        context_length = len(unified_context)
+        
+        # Detect language (use existing or re-detect)
+        if not state.language_code:
+            lang_info = detect_language(unified_context, self.client)
+            state.language_code = lang_info["language_code"]
+        
+        # Save versioned context
+        context_file = project_dir / f"context_v{current_version}.txt"
+        with open(context_file, 'w', encoding='utf-8') as f:
+            f.write(unified_context)
+        
+        # Also update main context file
+        main_context_file = project_dir / "context.txt"
+        with open(main_context_file, 'w', encoding='utf-8') as f:
+            f.write(unified_context)
+        
+        # Analyze gaps
+        print("🔍 Analyzing gaps in combined context...")
+        analysis = analyze_input(unified_context, self.client, language_code=state.language_code or "es")
+        
+        # Save versioned analysis
+        analysis_file = project_dir / f"analysis_v{current_version}.json"
+        gaps_data = []
+        for gap in analysis.gaps:
+            try:
+                if hasattr(gap.priority, 'value'):
+                    priority_value = gap.priority.value
+                else:
+                    priority_value = str(gap.priority)
+                
+                gaps_data.append({
+                    "section_key": gap.section_key,
+                    "section_title": gap.section_title,
+                    "priority": priority_value,
+                    "question": gap.question or "",
+                    "context": gap.context or "",
+                    "options": gap.options if gap.options else None
+                })
+            except Exception as e:
+                print(f"Error serializing gap {gap.section_key}: {e}")
+                gaps_data.append({
+                    "section_key": gap.section_key,
+                    "section_title": getattr(gap, 'section_title', 'Unknown'),
+                    "priority": "optional",
+                    "question": "",
+                    "context": "",
+                    "options": None
+                })
+        
+        with open(analysis_file, 'w', encoding='utf-8') as f:
+            json.dump({
+                "product_name": analysis.product_name,
+                "explicit_features": analysis.explicit_features,
+                "inferred_features": analysis.inferred_features,
+                "extracted_info": analysis.extracted_info if hasattr(analysis, 'extracted_info') else {},
+                "confidence_scores": analysis.confidence_scores if hasattr(analysis, 'confidence_scores') else {},
+                "gaps_count": len(analysis.gaps),
+                "gaps": gaps_data
+            }, f, indent=2, ensure_ascii=False)
+        
+        # Also update main analysis file
+        main_analysis_file = project_dir / "analysis.json"
+        with open(main_analysis_file, 'w', encoding='utf-8') as f:
+            json.dump({
+                "product_name": analysis.product_name,
+                "explicit_features": analysis.explicit_features,
+                "inferred_features": analysis.inferred_features,
+                "extracted_info": analysis.extracted_info if hasattr(analysis, 'extracted_info') else {},
+                "confidence_scores": analysis.confidence_scores if hasattr(analysis, 'confidence_scores') else {},
+                "gaps_count": len(analysis.gaps),
+                "gaps": gaps_data
+            }, f, indent=2, ensure_ascii=False)
+        
+        # Invalidate enriched gaps cache
+        enriched_gaps_cache = project_dir / "enriched_gaps.json"
+        if enriched_gaps_cache.exists():
+            enriched_gaps_cache.unlink()
+        
+        # Load existing answers to preserve them
+        answers_file = project_dir / "answers.json"
+        interactive_answers = {}
+        if answers_file.exists():
+            with open(answers_file, 'r', encoding='utf-8') as f:
+                answers_data = json.load(f)
+                for ans in answers_data.get('answers', []):
+                    if not ans.get('skipped', False) and ans.get('answer', '').strip():
+                        interactive_answers[ans['section_key']] = ans['answer']
+        
+        print(f"📝 Preserving {len(interactive_answers)} previous answers")
+        
+        # Build PRD with preserved answers
+        print(f"📄 Building PRD v{current_version} with preserved answers...")
+        prd = build_prd(analysis, interactive_answers, self.client, language_code=state.language_code or "es")
+        
+        # Add diagrams
+        diagrams = add_diagrams_to_prd(prd.sections, prd.product_name, self.client)
+        if diagrams:
+            prd.sections['appendix'] = diagrams
+        
+        # Save versioned PRD
+        outputs_dir = project_dir / "outputs"
+        outputs_dir.mkdir(exist_ok=True)
+        versioned_prd_file = outputs_dir / f"prd_v{current_version}.md"
+        with open(versioned_prd_file, 'w', encoding='utf-8') as f:
+            f.write(prd.to_markdown())
+        
+        # Update main PRD file
+        main_prd_file = outputs_dir / "prd.md"
+        with open(main_prd_file, 'w', encoding='utf-8') as f:
+            f.write(prd.to_markdown())
+        
+        # Update version metadata
+        version_manager = VersionManager(project_dir, self.client)
+        metadata = version_manager.get_version_metadata(current_version)
+        if metadata:
+            metadata['gaps_detected'] = len(analysis.gaps)
+            metadata['status'] = 'completed'
+            metadata['completed_at'] = datetime.now().isoformat()
+            metadata_file = project_dir / "versions" / f"v{current_version}_metadata.json"
+            with open(metadata_file, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, indent=2, ensure_ascii=False)
+        
+        # Update state
+        state.inputs_processed = True
+        state.context_generated = True
+        state.gaps_analyzed = True
+        state.prd_built = True
+        state.gaps_count = len(analysis.gaps)
+        state.context_length = context_length
+        state.version_history.append({
+            "version": current_version,
+            "action": "reprocessed",
+            "timestamp": datetime.now().isoformat(),
+            "gaps_detected": len(analysis.gaps),
+            "answers_preserved": len(interactive_answers)
+        })
+        state.updated_at = datetime.now().isoformat()
+        self.save_state(state)
+        
+        # Generate insights
+        print("🔍 Generating project insights from new PRD version...")
+        try:
+            from api.services.insights_generator import generate_all_insights
+            insights_results = generate_all_insights(project_dir, self.client)
+            print(f"✅ Generated insights for v{current_version}")
+            state.insights_generated = True
+            state.updated_at = datetime.now().isoformat()
+            self.save_state(state)
+        except Exception as e:
+            print(f"⚠️ Warning: Could not generate insights: {e}")
+        
+        return {
+            "version": current_version,
+            "prd_path": str(versioned_prd_file),
+            "gaps_detected": len(analysis.gaps),
+            "answers_preserved": len(interactive_answers),
+            "is_complete": prd.is_complete(),
+            "sections_count": len([s for s in prd.sections.values() if s]),
+            "message": f"PRD v{current_version} generated successfully with all sources"
+        }
+    
+    def get_version_history(self, project_id: str) -> Dict:
+        """Get complete version history for a project"""
+        state = self.load_state(project_id)
+        if not state:
+            raise ValueError(f"Project {project_id} not found")
+        
+        project_dir = self.get_project_dir(project_id)
+        version_manager = VersionManager(project_dir, self.client)
+        
+        versions = version_manager.get_all_versions()
+        
+        return {
+            "current_version": state.current_version,
+            "total_versions": len(versions),
+            "versions": versions,
+            "history": state.version_history
+        }
+    
+    def get_prd_version(self, project_id: str, version: int) -> Dict:
+        """Get PRD content for a specific version"""
+        state = self.load_state(project_id)
+        if not state:
+            raise ValueError(f"Project {project_id} not found")
+        
+        if version > state.current_version or version < 1:
+            raise ValueError(f"Invalid version {version}. Valid range: 1-{state.current_version}")
+        
+        project_dir = self.get_project_dir(project_id)
+        version_manager = VersionManager(project_dir, self.client)
+        
+        content = version_manager.get_prd_content(version)
+        metadata = version_manager.get_version_metadata(version)
+        
+        if not content:
+            raise ValueError(f"PRD v{version} not found")
+        
+        return {
+            "version": version,
+            "content": content,
+            "metadata": metadata
+        }
+    
+    def compare_versions(self, project_id: str, version1: int, version2: int) -> Dict:
+        """Compare two PRD versions"""
+        state = self.load_state(project_id)
+        if not state:
+            raise ValueError(f"Project {project_id} not found")
+        
+        if version1 > state.current_version or version1 < 1:
+            raise ValueError(f"Invalid version1 {version1}")
+        if version2 > state.current_version or version2 < 1:
+            raise ValueError(f"Invalid version2 {version2}")
+        
+        project_dir = self.get_project_dir(project_id)
+        version_manager = VersionManager(project_dir, self.client)
+        
+        comparison = version_manager.compare_prd_versions(version1, version2)
+        gaps_comparison = version_manager.compare_gaps(version1, version2)
+        
+        return {
+            **comparison,
+            "gaps_comparison": gaps_comparison
         }
 

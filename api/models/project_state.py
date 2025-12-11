@@ -3,7 +3,7 @@ Project State Model - Tracks the state of each project's processing steps
 """
 
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -33,6 +33,10 @@ class ProjectState(BaseModel):
     context_length: Optional[int] = None
     gaps_count: Optional[int] = None
     questions_count: Optional[int] = None
+    
+    # Versioning
+    current_version: int = 1
+    version_history: List[dict] = []
     
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON storage"""

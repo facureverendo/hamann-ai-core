@@ -3,10 +3,11 @@ import { useState, useEffect, useRef } from 'react'
 import GlassCard from '../components/ui/GlassCard'
 import NeonButton from '../components/ui/NeonButton'
 import MarkdownRenderer from '../components/ui/MarkdownRenderer'
-import { Search, History, GitCompare, ChevronDown, ChevronRight, Send, Loader2, Plus } from 'lucide-react'
+import { Search, History, GitCompare, ChevronDown, ChevronRight, Send, Loader2, Plus, Check } from 'lucide-react'
 import { prdService } from '../services/prdService'
 import type { ChatSummary, ChatMessage } from '../services/prdService'
 import { projectService } from '../services/projectService'
+import VersionComparator from '../components/prd/VersionComparator'
 
 export default function PRDViewer() {
   const { id } = useParams()
@@ -23,9 +24,19 @@ export default function PRDViewer() {
   const [chats, setChats] = useState<ChatSummary[]>([])
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [loadingChats, setLoadingChats] = useState(false)
+  
+  // Version management state
+  const [versions, setVersions] = useState<any[]>([])
+  const [currentVersion, setCurrentVersion] = useState<number>(1)
+  const [selectedVersion, setSelectedVersion] = useState<number>(1)
+  const [loadingVersion, setLoadingVersion] = useState(false)
+  const [showVersionComparator, setShowVersionComparator] = useState(false)
 
   useEffect(() => {
     if (id) {
+      // Load version history first
+      loadVersionHistory()
+      
       // Load PRD
       prdService.getPRD(id).then((data) => {
         setPrd(data)
@@ -40,6 +51,8 @@ export default function PRDViewer() {
       // Load language
       projectService.getProjectStatus(id).then((state) => {
         setLanguage(state.language_code || 'es')
+        setCurrentVersion(state.current_version || 1)
+        setSelectedVersion(state.current_version || 1)
       }).catch(() => {
         setLanguage('es')
       })
@@ -48,6 +61,76 @@ export default function PRDViewer() {
       loadChats()
     }
   }, [id])
+  
+  const loadVersionHistory = async () => {
+    if (!id) return
+    
+    try {
+      const history = await projectService.getVersionHistory(id)
+      setVersions(history.versions)
+      setCurrentVersion(history.current_version)
+      setSelectedVersion(history.current_version)
+    } catch (err) {
+      console.error('Error loading version history:', err)
+    }
+  }
+  
+  const loadPRDVersion = async (version: number) => {
+    if (!id) return
+    
+    setLoadingVersion(true)
+    try {
+      const versionData = await projectService.getPRDVersion(id, version)
+      // Parse the markdown content to sections
+      const sections = parseMarkdownToSections(versionData.content)
+      setPrd({
+        title: `PRD - Versión ${version}`,
+        updated_at: versionData.metadata?.created_at || new Date().toISOString(),
+        sections
+      })
+      setSelectedVersion(version)
+    } catch (err) {
+      console.error('Error loading PRD version:', err)
+    } finally {
+      setLoadingVersion(false)
+    }
+  }
+  
+  const parseMarkdownToSections = (markdown: string) => {
+    const sections = []
+    const lines = markdown.split('\n')
+    let currentSection: any = null
+    let currentContent: string[] = []
+    
+    for (const line of lines) {
+      if (line.startsWith('## ')) {
+        // Save previous section
+        if (currentSection) {
+          currentSection.content = currentContent.join('\n')
+          sections.push(currentSection)
+        }
+        
+        // Start new section
+        const title = line.substring(3).trim()
+        currentSection = {
+          id: title.toLowerCase().replace(/\s+/g, '_').replace(/[^\w_]/g, ''),
+          title,
+          content: ''
+        }
+        currentContent = []
+      } else if (currentSection) {
+        currentContent.push(line)
+      }
+    }
+    
+    // Save last section
+    if (currentSection) {
+      currentSection.content = currentContent.join('\n')
+      sections.push(currentSection)
+    }
+    
+    return sections
+  }
   
   const loadChats = async () => {
     if (!id) return
@@ -247,13 +330,36 @@ export default function PRDViewer() {
                 className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-neon-blue"
               />
             </div>
-            <NeonButton variant="cyan">
-              <History className="w-4 h-4 mr-2" />
-              Version History
-            </NeonButton>
-            <NeonButton variant="purple">
+            
+            {/* Version Selector */}
+            {versions.length > 0 && (
+              <div className="relative">
+                <select
+                  value={selectedVersion}
+                  onChange={(e) => loadPRDVersion(Number(e.target.value))}
+                  disabled={loadingVersion}
+                  className="pl-4 pr-10 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-neon-blue disabled:opacity-50 appearance-none cursor-pointer"
+                >
+                  {versions.map((v) => (
+                    <option key={v.version} value={v.version} className="bg-dark-primary">
+                      Versión {v.version} {v.version === currentVersion ? '(actual)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                {selectedVersion === currentVersion && (
+                  <Check className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-green-400" />
+                )}
+              </div>
+            )}
+            
+            <NeonButton 
+              variant="purple" 
+              onClick={() => setShowVersionComparator(true)}
+              disabled={versions.length < 2}
+            >
               <GitCompare className="w-4 h-4 mr-2" />
-              Compare Versions
+              Comparar Versiones
             </NeonButton>
           </div>
         </div>
@@ -424,6 +530,16 @@ export default function PRDViewer() {
           </div>
         </GlassCard>
       </div>
+
+      {/* Version Comparator Modal */}
+      {showVersionComparator && versions.length >= 2 && (
+        <VersionComparator
+          projectId={id || ''}
+          versions={versions}
+          currentVersion={currentVersion}
+          onClose={() => setShowVersionComparator(false)}
+        />
+      )}
     </div>
   )
 }

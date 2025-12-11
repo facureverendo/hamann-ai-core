@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import GlassCard from '../ui/GlassCard'
 import NeonButton from '../ui/NeonButton'
 import InteractiveQuestions from './InteractiveQuestions'
+import AddSourcesModal from './AddSourcesModal'
 import { 
   FileText, 
   Search, 
@@ -17,7 +18,9 @@ import {
   X,
   AlertTriangle,
   Info,
-  HelpCircle
+  HelpCircle,
+  FilePlus,
+  RefreshCw
 } from 'lucide-react'
 import { projectService } from '../../services/projectService'
 
@@ -44,6 +47,8 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
   const [showResults, setShowResults] = useState<string | null>(null)
   const [resultsData, setResultsData] = useState<any>(null)
   const [showInteractiveQuestions, setShowInteractiveQuestions] = useState(false)
+  const [showAddSources, setShowAddSources] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const actions: ActionStatus[] = [
     {
@@ -89,6 +94,24 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
       status: projectState?.backlog_generated ? 'completed' : (projectState?.prd_built ? 'available' : 'available'),
       description: 'Genera el backlog de Jira desde el PRD',
       requires: ['prd_built']
+    },
+    {
+      id: 'add-sources',
+      label: 'Agregar Documentos',
+      icon: FilePlus,
+      endpoint: 'sources',
+      status: projectState?.prd_built ? 'available' : 'available',
+      description: 'Agregar nuevos documentos complementarios al proyecto',
+      requires: ['prd_built']
+    },
+    {
+      id: 'reprocess',
+      label: 'Reprocesar Proyecto',
+      icon: RefreshCw,
+      endpoint: 'reprocess',
+      status: (projectState?.current_version > 1 && !projectState?.prd_built) ? 'available' : 'available',
+      description: 'Generar nueva versión del PRD con todas las fuentes',
+      requires: []
     }
   ]
 
@@ -110,8 +133,27 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
       return
     }
 
+    // Special handling for add-sources: open modal
+    if (action.id === 'add-sources') {
+      setShowAddSources(true)
+      return
+    }
+
+    // Special handling for reprocess
+    if (action.id === 'reprocess') {
+      if (!projectState?.current_version || projectState.current_version <= 1) {
+        setError('No hay nuevas fuentes para reprocesar')
+        return
+      }
+      if (projectState.prd_built && projectState.current_version > 1) {
+        setError('El proyecto ya está actualizado. Agrega nuevas fuentes primero.')
+        return
+      }
+    }
+
     setLoading(action.id)
     setError(null)
+    setSuccessMessage(null)
 
     try {
       const result = await projectService.executeAction(projectId, action.endpoint)
@@ -120,6 +162,11 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
       if (action.id === 'build-prd' && result?.user_answers_count > 0) {
         console.log(`✅ PRD construido con ${result.user_answers_count} respuestas del usuario`)
         console.log(`   Secciones completadas: ${result.user_answers_used?.join(', ')}`)
+      }
+
+      // Show success for reprocess
+      if (action.id === 'reprocess') {
+        setSuccessMessage(`PRD v${result.version} generado exitosamente con ${result.gaps_detected} gaps detectados`)
       }
       
       if (onStateUpdate) {
@@ -220,6 +267,13 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
       {error && (
         <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
           {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <span>{successMessage}</span>
         </div>
       )}
 
@@ -522,6 +576,21 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
           onClose={() => setShowInteractiveQuestions(false)}
           onComplete={() => {
             setShowInteractiveQuestions(false)
+            if (onStateUpdate) {
+              onStateUpdate()
+            }
+          }}
+        />
+      )}
+
+      {/* Add Sources Modal */}
+      {showAddSources && (
+        <AddSourcesModal
+          projectId={projectId}
+          onClose={() => setShowAddSources(false)}
+          onSuccess={(result) => {
+            setShowAddSources(false)
+            setSuccessMessage(`${result.files_added} documento(s) agregado(s) a la versión ${result.new_version}. Usa 'Reprocesar Proyecto' para generar nueva versión del PRD.`)
             if (onStateUpdate) {
               onStateUpdate()
             }

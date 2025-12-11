@@ -340,5 +340,123 @@ export const projectService = {
     const response = await apiClient.delete(`/api/projects/${projectId}/meetings/${meetingId}`)
     return response.data
   },
+
+  // ========================
+  // VERSIONING API
+  // ========================
+
+  async addSources(projectId: string, files: File[], notes?: string): Promise<{
+    new_version: number
+    files_added: number
+    files: string[]
+    notes: string
+    message: string
+  }> {
+    const formData = new FormData()
+    if (notes) {
+      formData.append('version_notes', notes)
+    }
+    files.forEach((file) => formData.append('files', file))
+    
+    const response = await apiClient.post(`/api/projects/${projectId}/sources`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  async reprocessProject(projectId: string): Promise<{
+    version: number
+    prd_path: string
+    gaps_detected: number
+    answers_preserved: number
+    is_complete: boolean
+    sections_count: number
+    message: string
+  }> {
+    const response = await apiClient.post(`/api/projects/${projectId}/reprocess`)
+    return response.data
+  },
+
+  async getVersionHistory(projectId: string): Promise<{
+    current_version: number
+    total_versions: number
+    versions: Array<{
+      version: number
+      created_at: string
+      files_added: string[]
+      notes: string
+      gaps_detected: number
+      questions_generated: number
+      status: string
+    }>
+    history: Array<{
+      version: number
+      action: string
+      timestamp: string
+      notes?: string
+      files_added?: string[]
+    }>
+  }> {
+    const response = await apiClient.get(`/api/projects/${projectId}/versions`)
+    return response.data
+  },
+
+  async getPRDVersion(projectId: string, version: number): Promise<{
+    version: number
+    content: string
+    metadata: {
+      version: number
+      created_at: string
+      files_added: string[]
+      notes: string
+      status: string
+    }
+  }> {
+    const response = await apiClient.get(`/api/projects/${projectId}/prd/v/${version}`)
+    return response.data
+  },
+
+  async compareVersions(projectId: string, version1: number, version2: number): Promise<{
+    version1: number
+    version2: number
+    summary: string
+    sections_added: number
+    sections_removed: number
+    sections_modified: number
+    sections_unchanged: number
+    added: Array<{
+      section: string
+      title: string
+      content: string
+    }>
+    removed: Array<{
+      section: string
+      title: string
+    }>
+    modified: Array<{
+      section: string
+      title: string
+      similarity: number
+      changes: Array<{
+        type: 'added' | 'removed' | 'context'
+        content: string
+      }>
+    }>
+    gaps_comparison: {
+      version1: number
+      version2: number
+      gaps_v1: number
+      gaps_v2: number
+      new_gaps: string[]
+      resolved_gaps: string[]
+      common_gaps: string[]
+    }
+  }> {
+    const response = await apiClient.post(`/api/projects/${projectId}/versions/compare`, {
+      version1,
+      version2
+    })
+    return response.data
+  },
 }
 
