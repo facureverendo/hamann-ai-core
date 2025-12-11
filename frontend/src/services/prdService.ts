@@ -42,5 +42,10 @@ export const prdService = {
     })
     return response.data
   },
+
+  async chatAboutPRD(projectId: string, message: string): Promise<{ answer: string; language: string }> {
+    const response = await apiClient.post(`/api/prd/${projectId}/chat`, { message })
+    return response.data
+  },
 }
 
