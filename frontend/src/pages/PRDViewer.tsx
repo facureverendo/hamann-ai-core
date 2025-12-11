@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import GlassCard from '../components/ui/GlassCard'
 import NeonButton from '../components/ui/NeonButton'
 import MarkdownRenderer from '../components/ui/MarkdownRenderer'
@@ -21,6 +21,7 @@ export default function PRDViewer() {
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [language, setLanguage] = useState('es')
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (id) {
@@ -57,6 +58,13 @@ export default function PRDViewer() {
       })
     }
   }, [id])
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+    }
+  }, [chatMessages, chatLoading])
   
   const handleSendMessage = async () => {
     if (!chatInput.trim() || chatLoading || !id) return
@@ -141,11 +149,11 @@ export default function PRDViewer() {
   }
 
   return (
-    <div className="p-6 h-full flex gap-6">
+    <div className="p-6 h-[calc(100vh-4rem)] flex gap-6 overflow-hidden">
       {/* Main Document Reader */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Top Bar */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -167,7 +175,7 @@ export default function PRDViewer() {
         </div>
 
         {/* PRD Content */}
-        <GlassCard className="flex-1 p-8 overflow-y-auto">
+        <GlassCard className="flex-1 p-8 overflow-y-auto min-h-0">
           {loading ? (
             <div className="text-center text-gray-400">Cargando PRD...</div>
           ) : prd?.error ? (
@@ -228,12 +236,12 @@ export default function PRDViewer() {
       </div>
 
       {/* Right Panel - AI Assistant Chat */}
-      <div className="w-96 flex flex-col">
-        <GlassCard className="flex-1 p-6 flex flex-col">
-          <h2 className="text-lg font-semibold text-white mb-4">{getUIText('aiAssistant')}</h2>
+      <div className="w-96 flex flex-col min-h-0">
+        <GlassCard className="flex-1 p-6 flex flex-col min-h-0">
+          <h2 className="text-lg font-semibold text-white mb-4 flex-shrink-0">{getUIText('aiAssistant')}</h2>
           
           {/* Example Queries */}
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-4 flex-shrink-0">
             <div className="text-xs text-gray-500 mb-2">{getUIText('exampleQueries')}</div>
             {(getUIText('examples') as string[]).map((example, idx) => (
               <button
@@ -246,8 +254,11 @@ export default function PRDViewer() {
             ))}
           </div>
 
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+          {/* Chat Messages - Fixed height with scroll */}
+          <div 
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0 pr-2"
+          >
             {chatMessages.map((msg, idx) => (
               <div key={idx} className="flex flex-col gap-2">
                 <div className="text-xs text-gray-500">
@@ -273,8 +284,8 @@ export default function PRDViewer() {
             )}
           </div>
 
-          {/* Input Field */}
-          <div className="flex gap-2">
+          {/* Input Field - Fixed at bottom */}
+          <div className="flex gap-2 flex-shrink-0">
             <input
               type="text"
               placeholder={getUIText('askPlaceholder') as string}
