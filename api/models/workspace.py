@@ -54,6 +54,22 @@ class ResourceEstimation(BaseModel):
     confidence_level: Optional[str] = None
 
 
+class FeatureSuggestion(BaseModel):
+    """Sugerencia de feature generada por AI"""
+    id: str
+    name: str
+    description: str
+    rationale: str  # Por qué es necesaria
+    priority: str  # "critical", "important", "optional"
+    source: str  # "ai_analysis", "identified_module", "suggested_module"
+    status: str = "pending"  # "pending", "accepted", "discarded", "completed", "backlog"
+    created_at: str
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON storage"""
+        return self.model_dump()
+
+
 class WorkspaceAnalysis(BaseModel):
     """Análisis completo del workspace generado por AI"""
     workspace_id: str
@@ -108,6 +124,9 @@ class Workspace(BaseModel):
     document_history: List[DocumentVersion] = []
     analysis_version: int = 1  # Versión del análisis actual
     last_analysis_at: Optional[str] = None
+    
+    # Sugerencias de features
+    feature_suggestions: List[FeatureSuggestion] = []
     
     # Configuración
     language_code: Optional[str] = None

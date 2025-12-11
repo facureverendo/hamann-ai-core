@@ -1,9 +1,9 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import GlassCard from '../components/ui/GlassCard'
 import NeonButton from '../components/ui/NeonButton'
 import MarkdownRenderer from '../components/ui/MarkdownRenderer'
-import { Search, History, GitCompare, ChevronDown, ChevronRight, Send, Loader2, Plus, Check } from 'lucide-react'
+import { Search, GitCompare, ChevronDown, ChevronRight, Send, Loader2, Plus, Check } from 'lucide-react'
 import { prdService } from '../services/prdService'
 import type { ChatSummary, ChatMessage } from '../services/prdService'
 import { projectService } from '../services/projectService'
@@ -11,6 +11,7 @@ import VersionComparator from '../components/prd/VersionComparator'
 
 export default function PRDViewer() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['overview']))
   const [prd, setPrd] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -31,6 +32,7 @@ export default function PRDViewer() {
   const [selectedVersion, setSelectedVersion] = useState<number>(1)
   const [loadingVersion, setLoadingVersion] = useState(false)
   const [showVersionComparator, setShowVersionComparator] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (id) {
@@ -42,10 +44,13 @@ export default function PRDViewer() {
         setPrd(data)
         setExpandedSections(new Set(data.sections.map((s: any) => s.id)))
         setLoading(false)
+        setLoadError(null)
       }).catch((err) => {
         console.error('Error loading PRD:', err)
         setLoading(false)
-        setPrd({ error: err?.response?.data?.detail || 'Error loading PRD' })
+        const detail = err?.response?.data?.detail || 'Error loading PRD'
+        setPrd({ error: detail })
+        setLoadError(detail)
       })
       
       // Load language
@@ -380,6 +385,13 @@ export default function PRDViewer() {
                 <li>3. Generar Preguntas (opcional pero recomendado)</li>
                 <li>4. Construir PRD</li>
               </ol>
+              {loadError && (
+                <div className="mt-4">
+                  <NeonButton onClick={() => navigate(`/projects/${id}/brief`)}>
+                    Ir al Brief iterativo
+                  </NeonButton>
+                </div>
+              )}
             </div>
           ) : (
             <>

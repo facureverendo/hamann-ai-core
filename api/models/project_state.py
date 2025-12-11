@@ -17,6 +17,10 @@ class ProjectState(BaseModel):
     # Workspace reference (None for standalone features)
     workspace_id: Optional[str] = None
     
+    # Feature status within workspace
+    feature_status: Optional[str] = None  # "idea", "backlog", "in_progress", "completed", "discarded"
+    is_idea: bool = False  # True if this is just an idea (no documents/content)
+    
     # Processing steps status
     inputs_processed: bool = False
     context_generated: bool = False
@@ -40,6 +44,15 @@ class ProjectState(BaseModel):
     # Versioning
     current_version: int = 1
     version_history: List[dict] = []
+
+    # Brief lifecycle (para features sin documentos iniciales)
+    brief_generated: bool = False
+    brief_content: Optional[str] = None
+    brief_ready_for_prd: bool = False
+    brief_iterations: int = 0
+    brief_deleted_sections: List[str] = []
+    prd_deleted_sections: List[str] = []
+    prd_deleted_blocks: List[dict] = []
     
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON storage"""

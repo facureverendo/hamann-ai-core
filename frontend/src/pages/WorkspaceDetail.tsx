@@ -4,6 +4,7 @@ import GlassCard from '../components/ui/GlassCard'
 import NeonButton from '../components/ui/NeonButton'
 import MarkdownRenderer from '../components/ui/MarkdownRenderer'
 import AddDocumentsModal from '../components/workspace/AddDocumentsModal'
+import FeatureStatusBadge from '../components/workspace/FeatureStatusBadge'
 import { workspaceService, type WorkspaceDetail } from '../services/workspaceService'
 import {
   ArrowLeft,
@@ -16,7 +17,9 @@ import {
   ChevronRight,
   Sparkles,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Lightbulb,
+  List as ListIcon
 } from 'lucide-react'
 
 export default function WorkspaceDetailPage() {
@@ -26,6 +29,7 @@ export default function WorkspaceDetailPage() {
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
   const [features, setFeatures] = useState<any[]>([])
+  const [groupedFeatures, setGroupedFeatures] = useState<any>({})
   const [showAnalysis, setShowAnalysis] = useState(false)
   const [showAddDocuments, setShowAddDocuments] = useState(false)
 
@@ -53,6 +57,7 @@ export default function WorkspaceDetailPage() {
     try {
       const data = await workspaceService.getWorkspaceFeatures(id)
       setFeatures(data.features)
+      setGroupedFeatures(data.grouped || {})
     } catch (error) {
       console.error('Error loading features:', error)
     }
@@ -144,7 +149,7 @@ export default function WorkspaceDetailPage() {
             onClick={() => navigate(`/workspaces/${id}/features/new`)}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Nueva Feature
+            Gestionar Features
           </NeonButton>
         </div>
       </div>
@@ -357,7 +362,16 @@ export default function WorkspaceDetailPage() {
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Features / PRDs</h3>
-              <span className="text-sm text-gray-400">{features.length} features</span>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-400">{features.length} total</span>
+                <NeonButton
+                  size="sm"
+                  onClick={() => navigate(`/workspaces/${id}/features/new`)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Gestionar
+                </NeonButton>
+              </div>
             </div>
 
             {features.length === 0 ? (
@@ -373,29 +387,176 @@ export default function WorkspaceDetailPage() {
                 </NeonButton>
               </div>
             ) : (
-              <div className="space-y-3">
-                {features.map((feature) => (
-                  <div
-                    key={feature.project_id}
-                    onClick={() => navigate(`/projects/${feature.project_id}`)}
-                    className="p-4 glass-card rounded-lg hover:bg-white/5 transition cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="text-md font-medium text-white group-hover:text-neon-blue transition">
-                          {feature.project_name}
-                        </h4>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span>Creado: {new Date(feature.created_at).toLocaleDateString()}</span>
-                          {feature.prd_built && (
-                            <span className="text-green-400">✓ PRD Generado</span>
-                          )}
+              <div className="space-y-6">
+                {/* Ideas */}
+                {groupedFeatures.ideas && groupedFeatures.ideas.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-purple-400" />
+                      Ideas ({groupedFeatures.ideas.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {groupedFeatures.ideas.map((feature: any) => (
+                        <div
+                          key={feature.id}
+                          className="p-3 glass-card rounded-lg hover:bg-white/5 transition group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h5 className="text-sm font-medium text-white group-hover:text-neon-blue transition">
+                                  {feature.name}
+                                </h5>
+                                <FeatureStatusBadge status={feature.status} isIdea={feature.is_idea} />
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {new Date(feature.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <NeonButton
+                                size="xs"
+                                variant="purple"
+                                onClick={() => navigate(`/projects/${feature.id}/brief`)}
+                              >
+                                Brief iterativo
+                              </NeonButton>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-neon-blue transition" />
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* Backlog */}
+                {groupedFeatures.backlog && groupedFeatures.backlog.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                      <ListIcon className="w-4 h-4 text-yellow-400" />
+                      Backlog ({groupedFeatures.backlog.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {groupedFeatures.backlog.map((feature: any) => (
+                        <div
+                          key={feature.id}
+                          className="p-3 glass-card rounded-lg hover:bg-white/5 transition group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h5 className="text-sm font-medium text-white group-hover:text-neon-blue transition">
+                                  {feature.name}
+                                </h5>
+                                <FeatureStatusBadge status={feature.status} />
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {new Date(feature.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <NeonButton
+                                size="xs"
+                                variant="purple"
+                                onClick={() => navigate(`/projects/${feature.id}/brief`)}
+                              >
+                                Brief iterativo
+                              </NeonButton>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* En Proceso */}
+                {groupedFeatures.in_progress && groupedFeatures.in_progress.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-neon-blue" />
+                      En Proceso ({groupedFeatures.in_progress.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {groupedFeatures.in_progress.map((feature: any) => (
+                        <div
+                          key={feature.id}
+                          className="p-3 glass-card rounded-lg hover:bg-white/5 transition group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h5 className="text-sm font-medium text-white group-hover:text-neon-blue transition">
+                                  {feature.name}
+                                </h5>
+                                <FeatureStatusBadge status={feature.status} />
+                                {feature.prd_built && (
+                                  <span className="text-xs text-green-400">✓ PRD</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {new Date(feature.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {!feature.prd_built ? (
+                                <NeonButton
+                                  size="xs"
+                                  variant="purple"
+                                  onClick={() => navigate(`/projects/${feature.id}/brief`)}
+                                >
+                                  Brief iterativo
+                                </NeonButton>
+                              ) : (
+                                <NeonButton
+                                  size="xs"
+                                  variant="cyan"
+                                  onClick={() => navigate(`/prd/${feature.id}`)}
+                                >
+                                  Ver PRD
+                                </NeonButton>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Completadas */}
+                {groupedFeatures.completed && groupedFeatures.completed.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      Completadas ({groupedFeatures.completed.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {groupedFeatures.completed.map((feature: any) => (
+                        <div
+                          key={feature.id}
+                          onClick={() => navigate(`/projects/${feature.id}`)}
+                          className="p-3 glass-card rounded-lg hover:bg-white/5 transition cursor-pointer group opacity-75"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h5 className="text-sm font-medium text-white group-hover:text-neon-blue transition">
+                                  {feature.name}
+                                </h5>
+                                <FeatureStatusBadge status={feature.status} />
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {new Date(feature.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </GlassCard>

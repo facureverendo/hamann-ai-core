@@ -1,0 +1,91 @@
+
+
+=================================================================================== Text Document: estado-actual.txt ===
+# Estado actual del proyecto
+
+## Idea general y propósito
+Plataforma web full-stack que centraliza el inventario de propiedades provenientes de flujos de scraping (n8n) y permite que el equipo revise, puntúe y priorice oportunidades sin salir de un panel único. El objetivo primario es optimizar el seguimiento de propiedades no vistas, acelerar la clasificación mediante puntuaciones y mantener información sincronizada con la fuente original.
+
+## Propuesta de valor
+- Consolidar datos recibidos desde múltiples fuentes vía n8n y normalizarlos en MySQL.
+- Ofrecer un dashboard único con filtros avanzados para enfocar el trabajo en propiedades no vistas o destacadas.
+- Permitir acciones inmediatas sobre cada propiedad (marcar como vista, asignar puntuación, navegar al link original) para reducir el tiempo de análisis.
+- Mantener trazabilidad mínima (timestamps, campos visto/puntuacion) sin complicar el stack con autenticación ni procesos pesados.
+
+## Arquitectura general
+- **Backend Node.js (Express)** expuesto en `:3000`, con endpoints REST que gestionan inserciones masivas, listados y actualizaciones puntuales.
+- **Base de datos MySQL** con una tabla `propiedades` optimizada con índices (`ubicacion`, `visto`, `puntuacion`, `destacado`) para soportar filtros frecuentes.
+- **Frontend React (Vite + Tailwind)** servido en `:5173`, responsable de UX, filtros, contador de pendientes y tarjetas interactivas.
+- **Integración n8n**: workflows externos envían lotes de propiedades a `POST /api/propiedades/bulk`; para vistas detalladas se llama a un webhook configurado en `N8N_SCRAPE_WEBHOOK_URL`.
+
+## Flujo principal
+1. n8n formatea datos scrapeados y los envía al backend mediante `POST /api/propiedades/bulk` (usa `ON DUPLICATE KEY UPDATE` para diferenciar inserciones/actualizaciones).
+2. El backend valida y persiste en MySQL; expone métricas de insertadas vs actualizadas.
+3. El frontend consulta `GET /api/propiedades` con filtros persistidos (sessionStorage) y pinta tarjetas responsive.
+4. Acciones de usuario:
+   - `PATCH /api/propiedades/:id/visto` alterna el estado y actualiza el borde destacado.
+   - `PATCH /api/propiedades/:id/puntuacion` guarda la calificación (1-5) y refresca la UI.
+5. Para detalle extendido, el frontend golpea `GET /api/propiedades/:id/detalles` → backend recupera link → invoca webhook de n8n → devuelve JSON enriquecido sin persistirlo.
+
+## Estado funcional actual
+### Backend
+- API REST con 4 endpoints core implementados + endpoint para detalles con n8n.
+- Pool de conexiones MySQL (mysql2) y middleware `cors` + `express.json`.
+- Validaciones básicas de payload e informes `{insertadas, actualizadas}` en bulk.
+- Variables de entorno con fallback (`PORT`, `DB_*`, `N8N_SCRAPE_WEBHOOK_URL`).
+
+### Base de datos
+- Tabla `propiedades` con campos: `id`, `titulo`, `link`, `precio`, `destacado`, `ubicacion`, `tamanio`, `imagen`, `visto`, `puntuacion`, `created_at`, `updated_at`.
+- Ínidices definidos para soportar filtros del frontend y consultas rápidas.
+
+### Frontend
+- Componentes principales: `ListadoPropiedades`, `TarjetaPropiedad`, `Filtros`, `DetallePropiedad`.
+- Filtros controlados con estado temporal + botón “Aplicar”, default `visto = false` para priorizar pendientes.
+- Grid responsive, badges para destacadas, borde azul para no vistas, estrellas interactivas, contador de pendientes y enlaces al sitio original.
+- Servicios centralizados en `src/services/api.js` (axios) y manejo de sessionStorage para persistir criterios.
+
+### Dev experience y assets
+- Scripts raíz para instalar y levantar backend/frontend desde un solo lugar (`npm run install:all`, `npm run dev:backend`, etc.).
+- Documentación ya disponible: `README.md`, `CONFIGURACION.md`, `INICIO_RAPIDO.md`, `ARQUITECTURA.md`, `CHECKLIST.md`, `RESUMEN.md`, `N8N_SCRAPING_WORKFLOW.md`.
+- Datos de prueba (`backend/ejemplo-datos.json`) y script `backend/test-bulk.sh` para validar ingesta.
+
+## Tecnologías actuales
+- **Backend**: Node.js 18+, Express 4.18, mysql2 3.6 (promesas), axios (para n8n), cors, dotenv, nodemon para desarrollo.
+- **Frontend**: React 19, React Router DOM 7, Axios, Tailwind CSS 3.4, Vite 5, ESLint 9, plugins React, PostCSS, Leaflet + react-leaflet para mapas/ubicación.
+- **Infraestructura/otros**: Scripts npm orquestados desde la raíz, configuración de variables via `.env` (Vite exige prefijo `VITE_`).
+
+## Integración con n8n
+- Bulk import: cualquier workflow que agregue propiedades debe emitir un array JSON al endpoint `/api/propiedades/bulk` con los campos requeridos.
+- Detalle bajo demanda: `GET /api/propiedades/:id/detalles` reusa `N8N_SCRAPE_WEBHOOK_URL` para scrapear cada propiedad según su `link`; timeout 30s y la respuesta no se persiste.
+- Documentación operativa: `N8N_SCRAPING_WORKFLOW.md` describe payloads esperados y troubleshooting (timeouts, cambios de HTML fuente, etc.).
+
+## Métricas y entregables existentes
+- 1 tabla en MySQL con 9+ campos + timestamps.
+- 4 endpoints CRUD + 1 endpoint para detalles.
+- 3 componentes de UI principales + vista de detalle dedicada.
+- 7 documentos de referencia listos (ver sección anterior) y scripts auxiliares.
+
+## Riesgos y consideraciones
+- No hay autenticación; el sistema es público por diseño, por lo que cualquier despliegue productivo debería protegerse mediante capa externa si se expone a internet.
+- Dependencia total de n8n: fallas o cambios de estructura HTML requieren actualizar el workflow para evitar datos vacíos.
+- Operación asume Node 18+ tanto en backend como en herramientas Vite (Node 20 recomendado para builds/dockerizaciones futuras).
+
+## Ideas para próximas features
+1. Autenticación ligera (JWT + roles básicos) para proteger acciones de escritura.
+2. Paginación y ordenamiento avanzado en `GET /api/propiedades` para manejar volúmenes más grandes sin sobrecargar el frontend.
+3. Búsqueda avanzada (full-text en MySQL o integración con Algolia/Meilisearch) para filtrar por título o descripción.
+4. Caché de respuestas (Redis) para listas filtradas frecuentes y reducción de tiempos de respuesta.
+5. WebSockets o SSE para reflejar en tiempo real cuando otro usuario marca vistos/puntúa.
+6. Agregar notas o etiquetas internas por propiedad para enriquecer la colaboración.
+7. Automatizaciones adicionales en n8n (alertas por WhatsApp/email al detectar propiedades destacadas o con precio objetivo).
+8. Dockerización y pipeline CI/CD (GitHub Actions) para ambientes reproducibles y deploy automatizado.
+9. Testing automatizado (Jest + React Testing Library / Supertest) para cubrir endpoints críticos y UI interactiva.
+10. Reportes analíticos (dashboard con totales por ubicación, evolución de puntuaciones, tiempo promedio hasta marcar como vista).
+
+## Próximos pasos sugeridos
+- Definir prioridades en la lista de mejoras (ej. autenticación vs. paginación) y el esfuerzo estimado.
+- Preparar archivos `.env` reales y validar conexión MySQL en el entorno objetivo.
+- Completar pruebas E2E: cargar datos de ejemplo, recorrer filtros, ejecutar endpoints de actualización y validar respuesta del flujo de detalle con n8n.
+
+
+================================================================================

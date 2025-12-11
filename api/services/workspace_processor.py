@@ -19,7 +19,8 @@ sys.path.insert(0, str(project_root / 'src'))
 from src.ingestor import process_inputs_folder
 from src.language_detector import detect_language
 from src.workspace_analysis_template import WorkspaceAnalysisPrompt
-from api.models.workspace import Workspace, WorkspaceAnalysis, ModuleSuggestion, TechStackRecommendation
+from src.feature_suggestion_template import FeatureSuggestionPrompt
+from api.models.workspace import Workspace, WorkspaceAnalysis, ModuleSuggestion, TechStackRecommendation, FeatureSuggestion
 
 load_dotenv()
 
@@ -417,6 +418,185 @@ Análisis anterior del proyecto:
                 relevant_parts.append(f"- {risk}")
         
         return "\n\n".join(relevant_parts) if relevant_parts else ""
+    
+    def generate_feature_suggestions(self, workspace_id: str) -> List[FeatureSuggestion]:
+        """
+        Genera sugerencias de features usando AI basándose en:
+        1. Módulos identificados en el análisis
+        2. Módulos sugeridos por AI
+        3. Descripción del proyecto
+        4. Features ya existentes (para evitar duplicados)
+        """
+        workspace = self.load_workspace(workspace_id)
+        if not workspace:
+            raise ValueError(f"Workspace {workspace_id} not found")
+        
+        if not workspace.analysis:
+            # Si no hay análisis, retornar lista vacía
+            return []
+        
+        # Obtener nombres de features existentes
+        from api.services.project_processor import ProjectProcessor
+        project_processor = ProjectProcessor()
+        
+        existing_feature_names = []
+        for feature_id in workspace.features:
+            state = project_processor.load_state(feature_id)
+            if state:
+                existing_feature_names.append(state.project_name)
+        
+        # Preparar contexto del proyecto
+        project_context = f"""
+Proyecto: {workspace.name}
+Descripción: {workspace.description}
+"""
+        
+        # Preparar módulos identificados
+        identified_modules = workspace.analysis.identified_features or []
+        
+        # Preparar módulos sugeridos
+        suggested_modules = workspace.analysis.suggested_modules or []
+        
+        # Generar prompt
+        prompt = FeatureSuggestionPrompt.get_suggestion_prompt(
+            project_context=project_context,
+            existing_features=existing_feature_names,
+            identified_modules=identified_modules,
+            suggested_modules=suggested_modules,
+            language_code=workspace.language_code or "es"
+        )
+        
+        try:
+            # Llamar a OpenAI
+            response = self.client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Eres un arquitecto de software senior experto en identificar features necesarias para proyectos completos."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.7,
+                max_tokens=4096
+            )
+            
+            suggestions_text = response.choices[0].message.content
+            
+            # Parsear sugerencias del texto
+            suggestions = self._parse_feature_suggestions(
+                suggestions_text,
+                identified_modules,
+                suggested_modules
+            )
+            
+            return suggestions
+            
+        except Exception as e:
+            print(f"Error generating feature suggestions: {e}")
+            # Retornar lista vacía en caso de error
+            return []
+    
+    def _parse_feature_suggestions(
+        self,
+        suggestions_text: str,
+        identified_modules: List[dict],
+        suggested_modules: List[ModuleSuggestion]
+    ) -> List[FeatureSuggestion]:
+        """
+        Parsea el texto de sugerencias en objetos FeatureSuggestion.
+        """
+        suggestions = []
+        lines = suggestions_text.split('\n')
+        
+        current_feature = None
+        current_field = None
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Detectar inicio de nueva feature
+            if line.startswith('## Feature'):
+                # Guardar feature anterior si existe
+                if current_feature and current_feature.get('name'):
+                    suggestions.append(current_feature)
+                
+                # Iniciar nueva feature
+                current_feature = {
+                    'id': f"suggestion_{len(suggestions) + 1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                    'name': '',
+                    'description': '',
+                    'rationale': '',
+                    'priority': 'important',
+                    'source': 'ai_analysis',
+                    'status': 'pending',
+                    'created_at': datetime.now().isoformat()
+                }
+                current_field = None
+            
+            # Detectar campos
+            elif line.startswith('- **Nombre**:') or line.startswith('- **Name**:'):
+                current_field = 'name'
+                value = line.split(':', 1)[1].strip() if ':' in line else ''
+                if current_feature:
+                    current_feature['name'] = value
+            elif line.startswith('- **Descripción**:') or line.startswith('- **Description**:'):
+                current_field = 'description'
+                value = line.split(':', 1)[1].strip() if ':' in line else ''
+                if current_feature:
+                    current_feature['description'] = value
+            elif line.startswith('- **Justificación**:') or line.startswith('- **Rationale**:'):
+                current_field = 'rationale'
+                value = line.split(':', 1)[1].strip() if ':' in line else ''
+                if current_feature:
+                    current_feature['rationale'] = value
+            elif line.startswith('- **Prioridad**:') or line.startswith('- **Priority**:'):
+                value = line.split(':', 1)[1].strip().lower() if ':' in line else 'important'
+                if current_feature:
+                    # Normalizar prioridad
+                    if 'critical' in value:
+                        current_feature['priority'] = 'critical'
+                    elif 'important' in value:
+                        current_feature['priority'] = 'important'
+                    else:
+                        current_feature['priority'] = 'optional'
+            elif line.startswith('- **Fuente**:') or line.startswith('- **Source**:'):
+                value = line.split(':', 1)[1].strip().lower() if ':' in line else 'ai_analysis'
+                if current_feature:
+                    if 'identified' in value:
+                        current_feature['source'] = 'identified_module'
+                    elif 'suggested' in value:
+                        current_feature['source'] = 'suggested_module'
+                    else:
+                        current_feature['source'] = 'ai_analysis'
+            
+            # Continuar campo actual si no es un nuevo campo
+            elif current_field and current_feature and line and not line.startswith('-'):
+                if current_field == 'description':
+                    if current_feature['description']:
+                        current_feature['description'] += ' ' + line
+                    else:
+                        current_feature['description'] = line
+                elif current_field == 'rationale':
+                    if current_feature['rationale']:
+                        current_feature['rationale'] += ' ' + line
+                    else:
+                        current_feature['rationale'] = line
+        
+        # Guardar última feature
+        if current_feature and current_feature.get('name'):
+            suggestions.append(current_feature)
+        
+        # Crear objetos FeatureSuggestion
+        feature_suggestions = []
+        for sug_dict in suggestions:
+            if sug_dict.get('name'):  # Solo añadir si tiene nombre
+                feature_suggestions.append(FeatureSuggestion(**sug_dict))
+        
+        return feature_suggestions
     
     def suggest_tech_stack(self, workspace_id: str, requirements: Dict) -> TechStackRecommendation:
         """

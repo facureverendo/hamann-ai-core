@@ -10,7 +10,7 @@ import json
 import shutil
 from datetime import datetime
 
-from api.models.workspace import Workspace, WorkspaceAnalysis, DocumentVersion
+from api.models.workspace import Workspace, WorkspaceAnalysis, DocumentVersion, FeatureSuggestion
 from api.services.workspace_processor import WorkspaceProcessor
 
 router = APIRouter()
@@ -308,7 +308,7 @@ async def analyze_workspace(
 
 @router.get("/{workspace_id}/features")
 async def get_workspace_features(workspace_id: str):
-    """Obtiene las features/PRDs de un workspace"""
+    """Obtiene las features/PRDs de un workspace con sus estados"""
     workspace = processor.load_workspace(workspace_id)
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
@@ -322,24 +322,125 @@ async def get_workspace_features(workspace_id: str):
     for feature_id in workspace.features:
         state = project_processor.load_state(feature_id)
         if state:
-            features.append(state.to_dict())
+            features.append({
+                "id": feature_id,
+                "name": state.project_name,
+                "status": state.feature_status or "in_progress",
+                "is_idea": state.is_idea,
+                "created_at": state.created_at,
+                "updated_at": state.updated_at,
+                "prd_built": state.prd_built,
+                "workspace_id": state.workspace_id
+            })
+    
+    # Agrupar por estado
+    grouped = {
+        "ideas": [f for f in features if f["is_idea"]],
+        "backlog": [f for f in features if f["status"] == "backlog"],
+        "in_progress": [f for f in features if f["status"] == "in_progress"],
+        "completed": [f for f in features if f["status"] == "completed"],
+        "discarded": [f for f in features if f["status"] == "discarded"]
+    }
     
     return {
         "workspace_id": workspace_id,
-        "features": features
+        "features": features,
+        "grouped": grouped,
+        "suggestions": [s.to_dict() for s in workspace.feature_suggestions] if workspace.feature_suggestions else []
     }
+
+
+@router.get("/{workspace_id}/feature-suggestions")
+async def get_feature_suggestions(workspace_id: str):
+    """
+    Genera sugerencias de features basadas en:
+    - Análisis del workspace (módulos identificados y sugeridos)
+    - Features ya creadas (para no duplicar)
+    - Descripción del proyecto
+    """
+    workspace = processor.load_workspace(workspace_id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    
+    # Si ya hay sugerencias guardadas, retornarlas
+    if workspace.feature_suggestions:
+        return {
+            "suggestions": [s.to_dict() for s in workspace.feature_suggestions],
+            "generated_at": workspace.updated_at
+        }
+    
+    # Generar nuevas sugerencias con AI
+    suggestions = processor.generate_feature_suggestions(workspace_id)
+    
+    # Guardar en workspace
+    workspace.feature_suggestions = suggestions
+    workspace.updated_at = datetime.now().isoformat()
+    processor.save_workspace(workspace)
+    
+    return {
+        "suggestions": [s.to_dict() for s in suggestions],
+        "generated_at": datetime.now().isoformat()
+    }
+
+
+@router.post("/{workspace_id}/feature-suggestions/{suggestion_id}/status")
+async def update_suggestion_status(
+    workspace_id: str,
+    suggestion_id: str,
+    status: str = Form(...)  # "accepted", "discarded", "completed", "backlog"
+):
+    """Actualiza el estado de una sugerencia"""
+    workspace = processor.load_workspace(workspace_id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    
+    # Encontrar y actualizar sugerencia
+    found = False
+    for suggestion in workspace.feature_suggestions:
+        if suggestion.id == suggestion_id:
+            suggestion.status = status
+            found = True
+            break
+    
+    if not found:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    
+    workspace.updated_at = datetime.now().isoformat()
+    processor.save_workspace(workspace)
+    return {"status": "success", "suggestion_id": suggestion_id, "new_status": status}
 
 
 @router.post("/{workspace_id}/features")
 async def create_workspace_feature(
     workspace_id: str,
     name: str = Form(...),
-    files: List[UploadFile] = File(...)
+    files: Optional[List[UploadFile]] = File(None),
+    status: str = Form("in_progress"),  # "idea", "backlog", "in_progress"
+    description: Optional[str] = Form(None)
 ):
-    """Crea una nueva feature/PRD dentro de un workspace"""
+    """
+    Crea una feature con estado específico.
+    
+    - Si status="idea": no requiere archivos, solo nombre y descripción
+    - Si status="backlog" o "in_progress": puede tener archivos opcionales
+    """
     workspace = processor.load_workspace(workspace_id)
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
+    
+    # Validar estado
+    valid_statuses = ["idea", "backlog", "in_progress", "completed", "discarded"]
+    if status not in valid_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+        )
+    
+    is_idea = status == "idea"
+    
+    # Si es idea, no debe tener archivos
+    if is_idea and files:
+        raise HTTPException(status_code=400, detail="Ideas no requieren archivos")
     
     # Importar aquí para evitar importación circular
     from api.services.project_processor import ProjectProcessor
@@ -355,21 +456,24 @@ async def create_workspace_feature(
         project_id=feature_id,
         project_name=name,
         workspace_id=workspace_id,
+        feature_status=status,
+        is_idea=is_idea,
         created_at=datetime.now().isoformat(),
         updated_at=datetime.now().isoformat()
     )
     
-    # Guardar archivos
-    feature_dir = project_processor.get_project_dir(feature_id)
-    inputs_dir = feature_dir / "inputs"
-    inputs_dir.mkdir(parents=True, exist_ok=True)
-    
+    # Si hay archivos y no es idea, guardarlos
     saved_files = []
-    for file in files:
-        file_path = inputs_dir / file.filename
-        with open(file_path, 'wb') as f:
-            shutil.copyfileobj(file.file, f)
-        saved_files.append(file.filename)
+    if files and not is_idea:
+        feature_dir = project_processor.get_project_dir(feature_id)
+        inputs_dir = feature_dir / "inputs"
+        inputs_dir.mkdir(parents=True, exist_ok=True)
+        
+        for file in files:
+            file_path = inputs_dir / file.filename
+            with open(file_path, 'wb') as f:
+                shutil.copyfileobj(file.file, f)
+            saved_files.append(file.filename)
     
     # Guardar estado
     project_processor.save_state(state)
@@ -383,7 +487,8 @@ async def create_workspace_feature(
         "id": feature_id,
         "workspace_id": workspace_id,
         "name": name,
-        "status": "created",
+        "status": status,
+        "is_idea": is_idea,
         "files_uploaded": len(saved_files),
         "files": saved_files,
         "message": "Feature created successfully in workspace."

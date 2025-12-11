@@ -14,6 +14,8 @@ import Settings from './pages/Settings'
 import WorkspaceList from './pages/WorkspaceList'
 import WorkspaceDetail from './pages/WorkspaceDetail'
 import CreateWorkspace from './pages/CreateWorkspace'
+import CreateWorkspaceFeature from './pages/CreateWorkspaceFeature'
+import BriefEditor from './pages/BriefEditor'
 
 function App() {
   return (
@@ -30,11 +32,13 @@ function App() {
               <Route path="/workspaces" element={<WorkspaceList />} />
               <Route path="/workspaces/new" element={<CreateWorkspace />} />
               <Route path="/workspaces/:id" element={<WorkspaceDetail />} />
+              <Route path="/workspaces/:id/features/new" element={<CreateWorkspaceFeature />} />
               
               {/* Projects/Features Routes */}
               <Route path="/projects" element={<ProjectsList />} />
               <Route path="/projects/new" element={<CreateProject />} />
               <Route path="/projects/:id" element={<ProjectOverview />} />
+              <Route path="/projects/:id/brief" element={<BriefEditor />} />
               
               {/* PRD and other feature routes */}
               <Route path="/prd/:id" element={<PRDViewer />} />

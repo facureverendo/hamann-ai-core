@@ -4,8 +4,19 @@
   "description": "Este es un producto que pide un cliente, apra poder gestionar  sus dos locales de verduleria. La idea es poder tener control de ingresos, egresos, costos fijos, cual es el punto de equilibrio del negocio, etc",
   "type": "software_factory",
   "created_at": "2025-12-11T12:45:57.285802",
-  "updated_at": "2025-12-11T13:23:11.696293",
-  "features": [],
+  "updated_at": "2025-12-11T16:26:44.544622",
+  "features": [
+    "feature_20251211_162016",
+    "feature_20251211_162018",
+    "feature_20251211_162121",
+    "feature_20251211_162127",
+    "feature_20251211_162219",
+    "feature_20251211_162224",
+    "feature_20251211_162232",
+    "feature_20251211_162517",
+    "feature_20251211_162601",
+    "feature_20251211_162604"
+  ],
   "context_documents": [
     "Presupuesto Detallado.pdf",
     "README.md"
@@ -37,5 +48,127 @@
   ],
   "analysis_version": 2,
   "last_analysis_at": "2025-12-11T13:23:11.696099",
+  "feature_suggestions": [
+    {
+      "id": "suggestion_1_20251211_161739",
+      "name": "Gestión de Inventario",
+      "description": "Permite el seguimiento en tiempo real de las existencias de productos en cada local, incluyendo alertas de stock bajo.",
+      "rationale": "Un control efectivo del inventario es crucial para evitar pérdidas por productos no vendidos o vencidos. Además, permite planificar compras de manera eficiente y asegurar la disponibilidad de productos para los clientes.",
+      "priority": "critical",
+      "source": "ai_analysis",
+      "status": "discarded",
+      "created_at": "2025-12-11T16:17:39.200050"
+    },
+    {
+      "id": "suggestion_2_20251211_161739",
+      "name": "Registro de Ventas",
+      "description": "Captura y almacena todas las transacciones de ventas, proporcionando detalles como fecha, productos vendidos y método de pago.",
+      "rationale": "La capacidad de registrar y analizar las ventas es esencial para evaluar el rendimiento del negocio, identificar tendencias y ajustar estrategias de ventas.",
+      "priority": "critical",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200100"
+    },
+    {
+      "id": "suggestion_3_20251211_161739",
+      "name": "Gestión de Proveedores",
+      "description": "Administra la información de proveedores, incluyendo detalles de contacto, historial de pedidos y condiciones de pago.",
+      "rationale": "Mantener una buena relación con los proveedores es vital para asegurar precios competitivos y una cadena de suministro eficiente.",
+      "priority": "important",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200136"
+    },
+    {
+      "id": "suggestion_4_20251211_161739",
+      "name": "Análisis Financiero",
+      "description": "Proporciona informes financieros detallados, incluyendo ingresos, egresos, costos fijos y análisis del punto de equilibrio.",
+      "rationale": "Entender la salud financiera del negocio permite a los propietarios tomar decisiones informadas sobre inversiones, reducciones de costos y estrategias de crecimiento.",
+      "priority": "critical",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200162"
+    },
+    {
+      "id": "suggestion_5_20251211_161739",
+      "name": "Gestión de Costos Fijos",
+      "description": "Permite la entrada y seguimiento de costos fijos como alquiler, servicios públicos y salarios, con alertas para pagos pendientes.",
+      "rationale": "Tener visibilidad sobre los costos fijos ayuda a calcular el punto de equilibrio y planificar el presupuesto mensualmente.",
+      "priority": "important",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200218"
+    },
+    {
+      "id": "suggestion_6_20251211_161739",
+      "name": "Punto de Equilibrio",
+      "description": "Calcula automáticamente el punto de equilibrio del negocio basado en ingresos, costos variables y fijos.",
+      "rationale": "Conocer el punto de equilibrio es fundamental para evaluar la viabilidad del negocio y ajustar precios o estrategias de reducción de costos.",
+      "priority": "critical",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200243"
+    },
+    {
+      "id": "suggestion_7_20251211_161739",
+      "name": "Autenticación y Control de Acceso",
+      "description": "Implementa un sistema de autenticación de usuarios con roles y permisos para asegurar la información sensible.",
+      "rationale": "La seguridad de los datos es fundamental, especialmente en sistemas que manejan información financiera y de inventario. Controlar el acceso ayuda a prevenir fraudes y errores humanos.",
+      "priority": "critical",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200268"
+    },
+    {
+      "id": "suggestion_8_20251211_161739",
+      "name": "Generación de Reportes",
+      "description": "Ofrece la capacidad de generar reportes personalizados sobre ventas, inventario, y finanzas en diversos formatos.",
+      "rationale": "Los reportes permiten a los propietarios del negocio analizar datos históricos y presentes para tomar decisiones basadas en información precisa y oportuna.",
+      "priority": "important",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200292"
+    },
+    {
+      "id": "suggestion_9_20251211_161739",
+      "name": "Integración de Pagos Electrónicos",
+      "description": "Facilita el procesamiento de pagos electrónicos mediante integración con plataformas de pago populares.",
+      "rationale": "Ofrecer múltiples métodos de pago mejora la experiencia del cliente y puede incrementar las ventas al facilitar transacciones rápidas y seguras.",
+      "priority": "important",
+      "source": "ai_analysis",
+      "status": "discarded",
+      "created_at": "2025-12-11T16:17:39.200324"
+    },
+    {
+      "id": "suggestion_10_20251211_161739",
+      "name": "Gestión de Descuentos y Promociones",
+      "description": "Permite crear y gestionar descuentos y promociones temporales en los productos.",
+      "rationale": "Las promociones son una herramienta efectiva para aumentar las ventas, atraer nuevos clientes y liquidar stock excedente.",
+      "priority": "optional",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200348"
+    },
+    {
+      "id": "suggestion_11_20251211_161739",
+      "name": "Backup y Recuperación de Datos",
+      "description": "Proporciona una solución automática para el respaldo y recuperación de datos, asegurando la continuidad del negocio.",
+      "rationale": "Proteger los datos contra pérdidas accidentales o desastres es crucial para la estabilidad operativa y la confianza del cliente en el sistema.",
+      "priority": "critical",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200372"
+    },
+    {
+      "id": "suggestion_12_20251211_161739",
+      "name": "Notificaciones y Alertas",
+      "description": "Sistema de notificaciones para alertar sobre eventos importantes como inventario bajo, facturas vencidas o metas de ventas alcanzadas.",
+      "rationale": "Mantener al personal informado sobre situaciones críticas ayuda a tomar acciones proactivas y mejorar la eficiencia operativa.",
+      "priority": "important",
+      "source": "ai_analysis",
+      "status": "accepted",
+      "created_at": "2025-12-11T16:17:39.200396"
+    }
+  ],
   "language_code": "es"
 }

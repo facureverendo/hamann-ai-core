@@ -8,6 +8,8 @@ export interface Project {
   created_at: string
   updated_at: string
   description?: string
+  workspace_id?: string | null
+  workspace_name?: string | null
 }
 
 export interface ProjectDetail {
@@ -114,6 +116,18 @@ export interface WeeklySummary {
   created_at: string
   updated_at: string
   is_manual_edit: boolean
+}
+
+// Brief / PRD iterativo
+export interface BriefData {
+  brief_content: string
+  ready_for_prd: boolean
+  iterations: number
+  deleted_sections: string[]
+}
+
+export interface BriefQuestionsResponse {
+  questions: Array<{ question: string; context?: string; section_hint?: string }>
 }
 
 export const projectService = {
@@ -456,6 +470,60 @@ export const projectService = {
       version1,
       version2
     })
+    return response.data
+  },
+
+  // Brief iterativo
+  async generateBrief(
+    projectId: string,
+    payload: { suggestion: any; workspace_context: any; language_code?: string }
+  ): Promise<BriefData> {
+    const response = await apiClient.post(`/api/projects/${projectId}/generate-brief`, payload)
+    return response.data
+  },
+
+  async getBrief(projectId: string): Promise<BriefData> {
+    const response = await apiClient.get(`/api/projects/${projectId}/brief`)
+    return response.data
+  },
+
+  async generateBriefQuestions(projectId: string): Promise<BriefQuestionsResponse> {
+    const response = await apiClient.post(`/api/projects/${projectId}/brief/questions`)
+    return response.data
+  },
+
+  async refineBrief(projectId: string, data: {
+    question?: string
+    answer?: string
+    question_id?: string
+    conversation_history?: Array<{ user: string; assistant: string }>
+  }): Promise<{ brief_content: string; iterations: number }> {
+    const response = await apiClient.post(`/api/projects/${projectId}/refine-brief`, data)
+    return response.data
+  },
+
+  async deleteBriefSection(projectId: string, sectionId: string): Promise<any> {
+    const response = await apiClient.delete(`/api/projects/${projectId}/brief/sections/${sectionId}`)
+    return response.data
+  },
+
+  async deleteBriefBlock(projectId: string, data: { section_id?: string; block_text: string }): Promise<any> {
+    const response = await apiClient.delete(`/api/projects/${projectId}/brief/blocks`, { data })
+    return response.data
+  },
+
+  async convertBriefToPRD(projectId: string): Promise<{ prd_generated: boolean; prd_content: string }> {
+    const response = await apiClient.post(`/api/projects/${projectId}/brief/to-prd`)
+    return response.data
+  },
+
+  async deletePRDSection(projectId: string, sectionKey: string): Promise<any> {
+    const response = await apiClient.delete(`/api/projects/${projectId}/prd/sections/${sectionKey}`)
+    return response.data
+  },
+
+  async deletePRDBlock(projectId: string, data: { section_key: string; block_text: string }): Promise<any> {
+    const response = await apiClient.delete(`/api/projects/${projectId}/prd/blocks`, { data })
     return response.data
   },
 }

@@ -12,6 +12,8 @@ import os
 from datetime import datetime
 
 from api.services.project_processor import ProjectProcessor
+from api.services.brief_processor import BriefProcessor
+from api.services.workspace_processor import WorkspaceProcessor
 import sys
 from pathlib import Path as PathLib
 
@@ -21,6 +23,8 @@ from prd_template import EnterprisePRDTemplate
 
 router = APIRouter()
 processor = ProjectProcessor()
+brief_processor = BriefProcessor()
+workspace_processor = WorkspaceProcessor()
 
 PROJECTS_DIR = Path(__file__).parent.parent.parent / "projects"
 
@@ -32,6 +36,8 @@ class ProjectSummary(BaseModel):
     progress: float
     created_at: str
     updated_at: str
+    workspace_id: Optional[str] = None
+    workspace_name: Optional[str] = None
 
 
 class ProjectDetail(BaseModel):
@@ -47,6 +53,25 @@ class ProjectDetail(BaseModel):
 
 class CreateProjectRequest(BaseModel):
     name: str
+
+
+class GenerateBriefRequest(BaseModel):
+    suggestion: Dict
+    workspace_context: Dict
+    language_code: Optional[str] = "es"
+
+
+class RefineBriefRequest(BaseModel):
+    question: Optional[str] = None
+    answer: Optional[str] = None
+    question_id: Optional[str] = None
+    conversation_history: Optional[List[Dict]] = None
+
+
+class DeleteBlockRequest(BaseModel):
+    section_id: Optional[str] = None
+    section_key: Optional[str] = None
+    block_text: Optional[str] = None
 
 
 @router.get("/", response_model=List[ProjectSummary])
@@ -73,13 +98,23 @@ async def list_projects():
                             ]
                             progress = sum(steps) / len(steps) if steps else 0.0
                             
+                            # Load workspace info if exists
+                            workspace_id = state.workspace_id
+                            workspace_name = None
+                            if workspace_id:
+                                workspace = workspace_processor.load_workspace(workspace_id)
+                                if workspace:
+                                    workspace_name = workspace.name
+                            
                             projects.append(ProjectSummary(
                                 id=state.project_id,
                                 name=state.project_name,
                                 status="active",
                                 progress=progress,
                                 created_at=state.created_at,
-                                updated_at=state.updated_at
+                                updated_at=state.updated_at,
+                                workspace_id=workspace_id,
+                                workspace_name=workspace_name
                             ))
     
     return projects
@@ -898,3 +933,134 @@ async def compare_versions(project_id: str, request: CompareVersionsRequest):
         error_detail = f"Error comparing versions: {str(e)}\n{traceback.format_exc()}"
         print(error_detail)
         raise HTTPException(status_code=500, detail=f"Error comparing versions: {str(e)}")
+
+
+# ========================
+# BRIEF ENDPOINTS
+# ========================
+
+@router.post("/{project_id}/generate-brief")
+async def generate_brief(project_id: str, body: GenerateBriefRequest):
+    """Genera brief inicial para features sin documentos."""
+    try:
+        result = brief_processor.generate_initial_brief(
+            project_id=project_id,
+            suggestion=body.suggestion,
+            workspace_context=body.workspace_context,
+            language_code=body.language_code or "es",
+        )
+        return {"status": "success", **result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating brief: {str(e)}")
+
+
+@router.get("/{project_id}/brief")
+async def get_brief(project_id: str):
+    """Obtiene el brief actual."""
+    state = processor.load_state(project_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Project not found")
+    brief_path = brief_processor._brief_file(project_id)
+    content = brief_path.read_text(encoding="utf-8") if brief_path.exists() else ""
+    return {
+        "brief_content": content,
+        "ready_for_prd": state.brief_ready_for_prd,
+        "iterations": state.brief_iterations,
+        "deleted_sections": state.brief_deleted_sections,
+    }
+
+
+@router.post("/{project_id}/brief/questions")
+async def generate_brief_questions(project_id: str):
+    """Genera preguntas AI para refinar el brief."""
+    try:
+        return brief_processor.generate_brief_questions(project_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating questions: {str(e)}")
+
+
+@router.post("/{project_id}/refine-brief")
+async def refine_brief(project_id: str, body: RefineBriefRequest):
+    """Refina brief ya existente con pregunta o respuesta."""
+    if not body.question and not body.answer:
+        raise HTTPException(status_code=400, detail="Provide a question or an answer to refine the brief")
+    try:
+        if body.question:
+            return brief_processor.refine_brief_with_question(
+                project_id,
+                user_question=body.question,
+                conversation_history=body.conversation_history,
+            )
+        else:
+            return brief_processor.refine_brief_with_answer(
+                project_id,
+                question_id=body.question_id or "",
+                answer=body.answer or "",
+            )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error refining brief: {str(e)}")
+
+
+@router.delete("/{project_id}/brief/sections/{section_id}")
+async def delete_brief_section(project_id: str, section_id: str):
+    """Elimina una sección completa del brief."""
+    try:
+        return brief_processor.delete_brief_section(project_id, section_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting brief section: {str(e)}")
+
+
+@router.delete("/{project_id}/brief/blocks")
+async def delete_brief_block(project_id: str, body: DeleteBlockRequest):
+    """Elimina un bloque específico del brief."""
+    if not body.block_text:
+        raise HTTPException(status_code=400, detail="block_text is required")
+    try:
+        return brief_processor.delete_brief_block(project_id, body.section_id or "", body.block_text)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting brief block: {str(e)}")
+
+
+@router.post("/{project_id}/brief/to-prd")
+async def brief_to_prd(project_id: str):
+    """Convierte el brief a PRD cuando el usuario está listo."""
+    try:
+        return brief_processor.convert_brief_to_prd(project_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error converting brief to PRD: {str(e)}")
+
+
+@router.delete("/{project_id}/prd/sections/{section_key}")
+async def delete_prd_section(project_id: str, section_key: str):
+    """Elimina una sección completa del PRD."""
+    try:
+        return brief_processor.delete_prd_section(project_id, section_key)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting PRD section: {str(e)}")
+
+
+@router.delete("/{project_id}/prd/blocks")
+async def delete_prd_block(project_id: str, body: DeleteBlockRequest):
+    """Elimina un bloque específico del PRD."""
+    if not body.block_text or not body.section_key:
+        raise HTTPException(status_code=400, detail="section_key and block_text are required")
+    try:
+        return brief_processor.delete_prd_block(project_id, body.section_key, body.block_text)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting PRD block: {str(e)}")

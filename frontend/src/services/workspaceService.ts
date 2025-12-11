@@ -78,6 +78,17 @@ export interface WorkspaceAnalysis {
   business_risks: string[]
 }
 
+export interface FeatureSuggestion {
+  id: string
+  name: string
+  description: string
+  rationale: string
+  priority: string
+  source: string
+  status: string
+  created_at: string
+}
+
 export const workspaceService = {
   // CRUD básico
   async listWorkspaces(): Promise<Workspace[]> {
@@ -171,28 +182,87 @@ export const workspaceService = {
   // Features del workspace
   async getWorkspaceFeatures(workspaceId: string): Promise<{
     workspace_id: string
-    features: any[]
+    features: Array<{
+      id: string
+      name: string
+      status: string
+      is_idea: boolean
+      created_at: string
+      updated_at: string
+      prd_built: boolean
+      workspace_id: string
+    }>
+    grouped: {
+      ideas: any[]
+      backlog: any[]
+      in_progress: any[]
+      completed: any[]
+      discarded: any[]
+    }
+    suggestions: FeatureSuggestion[]
   }> {
     const response = await apiClient.get(`/api/workspaces/${workspaceId}/features`)
     return response.data
   },
 
-  async createFeature(workspaceId: string, name: string, files: File[]): Promise<{
+  async createFeature(
+    workspaceId: string,
+    name: string,
+    status: string = 'in_progress',
+    description?: string,
+    files?: File[]
+  ): Promise<{
     id: string
     workspace_id: string
     name: string
     status: string
+    is_idea: boolean
     files_uploaded: number
     files: string[]
     message: string
   }> {
     const formData = new FormData()
     formData.append('name', name)
-    files.forEach((file) => formData.append('files', file))
+    formData.append('status', status)
+    if (description) {
+      formData.append('description', description)
+    }
+    if (files && files.length > 0) {
+      files.forEach((file) => formData.append('files', file))
+    }
     
     const response = await apiClient.post(`/api/workspaces/${workspaceId}/features`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
+    return response.data
+  },
+
+  // Sugerencias de features
+  async getFeatureSuggestions(workspaceId: string): Promise<{
+    suggestions: FeatureSuggestion[]
+    generated_at: string
+  }> {
+    const response = await apiClient.get(`/api/workspaces/${workspaceId}/feature-suggestions`)
+    return response.data
+  },
+
+  async updateSuggestionStatus(
+    workspaceId: string,
+    suggestionId: string,
+    status: string
+  ): Promise<{
+    status: string
+    suggestion_id: string
+    new_status: string
+  }> {
+    const formData = new FormData()
+    formData.append('status', status)
+    
+    const response = await apiClient.post(
+      `/api/workspaces/${workspaceId}/feature-suggestions/${suggestionId}/status`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
     return response.data
   },
 

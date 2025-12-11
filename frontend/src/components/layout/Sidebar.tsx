@@ -23,7 +23,7 @@ const menuItems = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-20 bg-dark-secondary border-r border-white/10 flex flex-col items-center py-6">
+    <aside className="w-20 bg-dark-secondary border-r border-white/10 flex flex-col items-center py-6 relative z-50">
       <div className="mb-8">
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-neon-blue to-neon-cyan flex items-center justify-center">
           <span className="text-white font-bold text-lg">H</span>
@@ -48,7 +48,7 @@ export default function Sidebar() {
               {({ isActive }) => (
                 <>
                   <Icon className="w-6 h-6" />
-                  <span className="text-xs mt-1 hidden group-hover:block absolute left-full ml-4 bg-dark-secondary px-2 py-1 rounded glass-card whitespace-nowrap z-50">
+                  <span className="text-xs mt-1 hidden group-hover:block absolute left-full ml-4 bg-dark-secondary px-2 py-1 rounded glass-card whitespace-nowrap z-[100] shadow-lg">
                     {item.label}
                   </span>
                   {isActive && (
