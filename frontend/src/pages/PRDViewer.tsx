@@ -3,14 +3,10 @@ import { useState, useEffect, useRef } from 'react'
 import GlassCard from '../components/ui/GlassCard'
 import NeonButton from '../components/ui/NeonButton'
 import MarkdownRenderer from '../components/ui/MarkdownRenderer'
-import { Search, History, GitCompare, ChevronDown, ChevronRight, Send, Loader2 } from 'lucide-react'
+import { Search, History, GitCompare, ChevronDown, ChevronRight, Send, Loader2, Plus } from 'lucide-react'
 import { prdService } from '../services/prdService'
+import type { ChatSummary, ChatMessage } from '../services/prdService'
 import { projectService } from '../services/projectService'
-
-interface ChatMessage {
-  role: 'user' | 'assistant'
-  content: string
-}
 
 export default function PRDViewer() {
   const { id } = useParams()
@@ -22,42 +18,99 @@ export default function PRDViewer() {
   const [chatLoading, setChatLoading] = useState(false)
   const [language, setLanguage] = useState('es')
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  
+  // New chat management state
+  const [chats, setChats] = useState<ChatSummary[]>([])
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null)
+  const [loadingChats, setLoadingChats] = useState(false)
 
   useEffect(() => {
     if (id) {
+      // Load PRD
       prdService.getPRD(id).then((data) => {
         setPrd(data)
         setExpandedSections(new Set(data.sections.map((s: any) => s.id)))
         setLoading(false)
-        
-        // Load project state to get language
-        projectService.getProjectStatus(id).then((state) => {
-          setLanguage(state.language_code || 'es')
-          
-          // Set initial AI message in the correct language
-          const welcomeMessages = {
-            es: '¿Cómo puedo ayudarte a entender este PRD?',
-            en: 'How can I help you understand this PRD?',
-            pt: 'Como posso ajudá-lo a entender este PRD?'
-          }
-          setChatMessages([{
-            role: 'assistant',
-            content: welcomeMessages[state.language_code as keyof typeof welcomeMessages] || welcomeMessages.es
-          }])
-        }).catch(() => {
-          // Default to Spanish
-          setChatMessages([{
-            role: 'assistant',
-            content: '¿Cómo puedo ayudarte a entender este PRD?'
-          }])
-        })
       }).catch((err) => {
         console.error('Error loading PRD:', err)
         setLoading(false)
         setPrd({ error: err?.response?.data?.detail || 'Error loading PRD' })
       })
+      
+      // Load language
+      projectService.getProjectStatus(id).then((state) => {
+        setLanguage(state.language_code || 'es')
+      }).catch(() => {
+        setLanguage('es')
+      })
+      
+      // Load chat history
+      loadChats()
     }
   }, [id])
+  
+  const loadChats = async () => {
+    if (!id) return
+    
+    setLoadingChats(true)
+    try {
+      const { chats: chatList } = await prdService.listChats(id)
+      setChats(chatList)
+      
+      // If there are chats, load the most recent one
+      if (chatList.length > 0 && !currentChatId) {
+        await loadChat(chatList[0].id)
+      } else if (chatList.length === 0) {
+        // No chats exist, create the first one
+        await createNewChat()
+      }
+    } catch (err) {
+      console.error('Error loading chats:', err)
+      // If there's an error, create a new chat
+      await createNewChat()
+    } finally {
+      setLoadingChats(false)
+    }
+  }
+  
+  const createNewChat = async () => {
+    if (!id) return
+    
+    setLoadingChats(true)
+    try {
+      const newChat = await prdService.createChat(id)
+      setChats(prev => [
+        {
+          id: newChat.id,
+          title: newChat.title,
+          created_at: newChat.created_at,
+          updated_at: newChat.updated_at,
+          message_count: newChat.message_count
+        },
+        ...prev
+      ])
+      await loadChat(newChat.id)
+    } catch (err) {
+      console.error('Error creating chat:', err)
+    } finally {
+      setLoadingChats(false)
+    }
+  }
+  
+  const loadChat = async (chatId: string) => {
+    if (!id) return
+    
+    setLoadingChats(true)
+    try {
+      const chat = await prdService.getChat(id, chatId)
+      setCurrentChatId(chatId)
+      setChatMessages(chat.messages)
+    } catch (err) {
+      console.error('Error loading chat:', err)
+    } finally {
+      setLoadingChats(false)
+    }
+  }
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -67,20 +120,35 @@ export default function PRDViewer() {
   }, [chatMessages, chatLoading])
   
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || chatLoading || !id) return
+    if (!chatInput.trim() || chatLoading || !id || !currentChatId) return
     
     const userMessage = chatInput.trim()
     setChatInput('')
     
-    // Add user message
-    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
+    // Add user message optimistically
+    const tempUserMsg: ChatMessage = { role: 'user', content: userMessage, timestamp: new Date().toISOString() }
+    setChatMessages(prev => [...prev, tempUserMsg])
     setChatLoading(true)
     
     try {
-      const response = await prdService.chatAboutPRD(id, userMessage)
+      const response = await prdService.sendChatMessage(id, currentChatId, userMessage)
       
-      // Add AI response
-      setChatMessages(prev => [...prev, { role: 'assistant', content: response.answer }])
+      // Replace temp message with server response and add assistant message
+      setChatMessages(prev => {
+        const withoutTemp = prev.slice(0, -1)
+        return [
+          ...withoutTemp,
+          response.user_message,
+          response.assistant_message
+        ]
+      })
+      
+      // Update chat summary in list
+      setChats(prev => prev.map(chat => 
+        chat.id === currentChatId 
+          ? { ...chat, updated_at: response.assistant_message.timestamp, message_count: chat.message_count + 2 }
+          : chat
+      ))
     } catch (err: any) {
       console.error('Error chatting with AI:', err)
       const errorMessages = {
@@ -90,7 +158,8 @@ export default function PRDViewer() {
       }
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: errorMessages[language as keyof typeof errorMessages] || errorMessages.es
+        content: errorMessages[language as keyof typeof errorMessages] || errorMessages.es,
+        timestamp: new Date().toISOString()
       }])
     } finally {
       setChatLoading(false)
@@ -107,6 +176,11 @@ export default function PRDViewer() {
         exampleQueries: 'Preguntas de ejemplo:',
         askPlaceholder: 'Pregunta sobre el PRD...',
         aiAssistant: 'Asistente IA',
+        newChat: 'Nuevo chat',
+        loadingChats: 'Cargando chats...',
+        thinking: 'Pensando...',
+        you: 'Tú',
+        ai: 'IA',
         examples: [
           'Explica la sección de arquitectura',
           '¿Cuáles son los requisitos clave?',
@@ -117,6 +191,11 @@ export default function PRDViewer() {
         exampleQueries: 'Example queries:',
         askPlaceholder: 'Ask about the PRD...',
         aiAssistant: 'AI Assistant',
+        newChat: 'New chat',
+        loadingChats: 'Loading chats...',
+        thinking: 'Thinking...',
+        you: 'You',
+        ai: 'AI',
         examples: [
           'Explain the architecture section',
           'What are the key requirements?',
@@ -127,6 +206,11 @@ export default function PRDViewer() {
         exampleQueries: 'Perguntas de exemplo:',
         askPlaceholder: 'Perguntar sobre o PRD...',
         aiAssistant: 'Assistente IA',
+        newChat: 'Novo chat',
+        loadingChats: 'Carregando chats...',
+        thinking: 'Pensando...',
+        you: 'Você',
+        ai: 'IA',
         examples: [
           'Explique a seção de arquitetura',
           'Quais são os requisitos principais?',
@@ -238,49 +322,88 @@ export default function PRDViewer() {
       {/* Right Panel - AI Assistant Chat */}
       <div className="w-96 flex flex-col min-h-0">
         <GlassCard className="flex-1 p-6 flex flex-col min-h-0">
-          <h2 className="text-lg font-semibold text-white mb-4 flex-shrink-0">{getUIText('aiAssistant')}</h2>
-          
-          {/* Example Queries */}
-          <div className="space-y-2 mb-4 flex-shrink-0">
-            <div className="text-xs text-gray-500 mb-2">{getUIText('exampleQueries')}</div>
-            {(getUIText('examples') as string[]).map((example, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleExampleQuery(example)}
-                className="w-full text-left text-sm text-gray-400 p-3 glass-card rounded hover:bg-white/5 transition"
-              >
-                {example}
-              </button>
-            ))}
+          {/* Header with New Chat button */}
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <h2 className="text-lg font-semibold text-white">{getUIText('aiAssistant')}</h2>
+            <button
+              onClick={createNewChat}
+              disabled={loadingChats}
+              className="p-2 bg-neon-blue/20 hover:bg-neon-blue/30 border border-neon-blue/50 rounded-lg transition disabled:opacity-50"
+              title="Nuevo chat"
+            >
+              <Plus className="w-4 h-4 text-neon-blue" />
+            </button>
           </div>
+          
+          {/* Chat History Dropdown */}
+          {chats.length > 0 && (
+            <div className="mb-4 flex-shrink-0">
+              <select
+                value={currentChatId || ''}
+                onChange={(e) => loadChat(e.target.value)}
+                disabled={loadingChats}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-neon-blue disabled:opacity-50"
+              >
+                {chats.map((chat) => (
+                  <option key={chat.id} value={chat.id} className="bg-dark-primary">
+                    {chat.title} ({chat.message_count} msgs)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
+          {/* Example Queries - Only show for new/empty chats */}
+          {chatMessages.length <= 1 && (
+            <div className="space-y-2 mb-4 flex-shrink-0">
+              <div className="text-xs text-gray-500 mb-2">{getUIText('exampleQueries')}</div>
+              {(getUIText('examples') as string[]).map((example, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleExampleQuery(example)}
+                  className="w-full text-left text-sm text-gray-400 p-3 glass-card rounded hover:bg-white/5 transition"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Chat Messages - Fixed height with scroll */}
           <div 
             ref={chatContainerRef}
             className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0 pr-2"
           >
-            {chatMessages.map((msg, idx) => (
-              <div key={idx} className="flex flex-col gap-2">
-                <div className="text-xs text-gray-500">
-                  {msg.role === 'user' ? 'Tú' : 'IA'}
-                </div>
-                <div className={`p-3 rounded-lg text-sm ${
-                  msg.role === 'user' 
-                    ? 'bg-neon-blue/20 text-white border border-neon-blue/30' 
-                    : 'glass-card text-gray-300'
-                }`}>
-                  {msg.content}
-                </div>
+            {loadingChats && chats.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-400 text-sm">{getUIText('loadingChats')}</div>
               </div>
-            ))}
-            {chatLoading && (
-              <div className="flex flex-col gap-2">
-                <div className="text-xs text-gray-500">IA</div>
-                <div className="p-3 glass-card rounded-lg text-sm text-gray-300 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Pensando...
-                </div>
-              </div>
+            ) : (
+              <>
+                {chatMessages.map((msg, idx) => (
+                  <div key={idx} className="flex flex-col gap-2">
+                    <div className="text-xs text-gray-500">
+                      {msg.role === 'user' ? getUIText('you') : getUIText('ai')}
+                    </div>
+                    <div className={`p-3 rounded-lg text-sm ${
+                      msg.role === 'user' 
+                        ? 'bg-neon-blue/20 text-white border border-neon-blue/30' 
+                        : 'glass-card text-gray-300'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {chatLoading && (
+                  <div className="flex flex-col gap-2">
+                    <div className="text-xs text-gray-500">{getUIText('ai')}</div>
+                    <div className="p-3 glass-card rounded-lg text-sm text-gray-300 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {getUIText('thinking')}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

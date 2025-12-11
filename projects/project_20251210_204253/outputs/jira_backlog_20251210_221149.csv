@@ -1,0 +1,50 @@
+Issue Type,Summary,Description,Priority,Story Points
+Epic,Implementación de Exportación de Datos de KB Analytics,"Este Epic abarca la implementación de la funcionalidad de exportación de datos desde la Base de Conocimiento a herramientas externas como Power BI, Excel y Looker. Incluye la integración de datos de la KB con otras fuentes y la exportación en formato CSV.",High,13
+Story,Exportar datos de la KB a formato CSV,"Como usuario, quiero exportar datos de la Base de Conocimiento en formato CSV, para poder analizarlos en herramientas externas.
+
+### Criterios de Aceptación
+- [ ] La exportación debe incluir todas las columnas definidas en los requisitos funcionales.
+- [ ] El archivo CSV debe generarse correctamente sin pérdida de datos.
+- [ ] La funcionalidad debe estar protegida por el feature flag 'kd_data_export_extended'.",High,5
+Story,Integrar datos de la KB con otras fuentes,"Como Director de Operaciones, quiero integrar los datos de la KB con otras fuentes de datos, para mejorar el análisis y la gobernanza del conocimiento.
+
+### Criterios de Aceptación
+- [ ] Los datos de la KB deben poder combinarse con datos de solicitudes y agentes.
+- [ ] La integración debe ser verificable a través de reportes combinados.
+- [ ] La funcionalidad debe estar documentada para los usuarios finales.",Medium,8
+Story,Agregar opción de fuente de datos 'Artículos',"Como usuario, quiero tener la opción de seleccionar 'Artículos' como fuente de datos, para poder exportar información específica de la Base de Conocimiento.
+
+### Criterios de Aceptación
+- [ ] La opción 'Artículos' debe estar disponible en el selector de fuente de datos.
+- [ ] Debe incluir todas las columnas especificadas en los requisitos funcionales.
+- [ ] La opción debe ser visible solo cuando el feature flag esté activado.",Medium,3
+Story,Auditar actividad en la Base de Conocimiento,"Como Manager de equipo, quiero auditar quién crea, modifica o publica contenido en la KB, para asegurar la calidad y relevancia del conocimiento.
+
+### Criterios de Aceptación
+- [ ] Se debe registrar la actividad de creación, modificación y publicación de artículos.
+- [ ] Los registros deben ser accesibles para los roles autorizados.
+- [ ] La auditoría debe incluir detalles como autor, fecha y tipo de cambio.",Medium,5
+Story,Mejorar la gobernanza del conocimiento,"Como Directora de Operaciones, quiero mejorar la gobernanza del conocimiento, para asegurar que el contenido esté actualizado y sea útil.
+
+### Criterios de Aceptación
+- [ ] Debe existir un mecanismo para identificar contenido obsoleto.
+- [ ] Los artículos deben tener un ciclo de vida claramente definido.
+- [ ] Los responsables deben ser notificados de la necesidad de actualización de contenido.",High,8
+Story,Facilitar análisis avanzados y reporting,"Como usuario, quiero facilitar el análisis avanzado y la generación de reportes, para obtener insights estratégicos del uso de la KB.
+
+### Criterios de Aceptación
+- [ ] Los datos exportados deben ser compatibles con herramientas de análisis avanzadas.
+- [ ] Debe existir documentación sobre cómo realizar análisis avanzados con los datos exportados.
+- [ ] Los reportes generados deben ser verificables y reproducibles.",High,8
+Task,Configurar feature flag 'kd_data_export_extended',"Como desarrollador, quiero configurar el feature flag 'kd_data_export_extended', para controlar la disponibilidad de la funcionalidad de exportación de datos.
+
+### Criterios de Aceptación
+- [ ] El feature flag debe estar correctamente configurado en el sistema.
+- [ ] Debe ser posible activar y desactivar la funcionalidad de exportación mediante el feature flag.
+- [ ] La configuración debe ser documentada para el equipo de desarrollo.",Low,2
+Bug,Problemas de compatibilidad con herramientas externas,"Como usuario, quiero asegurarme de que los datos exportados sean compatibles con herramientas externas, para evitar problemas de integración.
+
+### Criterios de Aceptación
+- [ ] Los datos exportados deben ser verificables en Power BI, Excel y Looker.
+- [ ] No debe haber pérdida de datos o errores de formato al importar en herramientas externas.
+- [ ] Los problemas de compatibilidad deben ser documentados y resueltos.",High,5

@@ -21,6 +21,29 @@ export interface PRDVersion {
   author: string
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
+}
+
+export interface Chat {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+  messages: ChatMessage[]
+  message_count: number
+}
+
+export interface ChatSummary {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+  message_count: number
+}
+
 export const prdService = {
   async getPRD(projectId: string): Promise<PRDDetail> {
     const response = await apiClient.get(`/api/prd/${projectId}`)
@@ -45,6 +68,31 @@ export const prdService = {
 
   async chatAboutPRD(projectId: string, message: string): Promise<{ answer: string; language: string }> {
     const response = await apiClient.post(`/api/prd/${projectId}/chat`, { message })
+    return response.data
+  },
+
+  // New chat management endpoints
+  async createChat(projectId: string, title?: string): Promise<Chat> {
+    const response = await apiClient.post(`/api/prd/${projectId}/chats`, { title })
+    return response.data
+  },
+
+  async listChats(projectId: string): Promise<{ chats: ChatSummary[] }> {
+    const response = await apiClient.get(`/api/prd/${projectId}/chats`)
+    return response.data
+  },
+
+  async getChat(projectId: string, chatId: string): Promise<Chat> {
+    const response = await apiClient.get(`/api/prd/${projectId}/chats/${chatId}`)
+    return response.data
+  },
+
+  async sendChatMessage(projectId: string, chatId: string, message: string): Promise<{
+    user_message: ChatMessage
+    assistant_message: ChatMessage
+    language: string
+  }> {
+    const response = await apiClient.post(`/api/prd/${projectId}/chats/${chatId}/message`, { message })
     return response.data
   },
 }

@@ -516,12 +516,22 @@ async def get_backlog(project_id: str):
         raise HTTPException(status_code=400, detail="Backlog not generated yet")
     
     project_dir = processor.get_project_dir(project_id)
-    backlog_file = project_dir / "outputs" / "jira_backlog.csv"
+    outputs_dir = project_dir / "outputs"
     
-    if backlog_file.exists():
-        # In production, parse CSV and return structured data
+    # Look for the most recent backlog file (with or without timestamp)
+    backlog_files = list(outputs_dir.glob("jira_backlog*.csv"))
+    
+    if backlog_files:
+        # Get the most recent file
+        backlog_file = max(backlog_files, key=lambda f: f.stat().st_mtime)
+        
+        # Parse CSV and normalize column names to snake_case
         import pandas as pd
         df = pd.read_csv(backlog_file)
+        
+        # Normalize column names: "Issue Type" -> "issue_type", "Story Points" -> "story_points"
+        df.columns = df.columns.str.lower().str.replace(' ', '_')
+        
         return {"items": df.to_dict('records')}
     
     return {"items": []}
