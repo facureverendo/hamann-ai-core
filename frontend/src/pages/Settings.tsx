@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import GlassCard from '../components/ui/GlassCard'
 import NeonButton from '../components/ui/NeonButton'
+import SuccessModal from '../components/ui/SuccessModal'
 import { Github, Slack, GitBranch, CheckCircle2, Save, Loader2 } from 'lucide-react'
 import { settingsService, type AppSettings } from '../services/settingsService'
 
@@ -13,6 +14,7 @@ export default function Settings() {
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null)
   const [loadingSettings, setLoadingSettings] = useState(true)
   const [savingSettings, setSavingSettings] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   useEffect(() => {
     loadAppSettings()
@@ -35,7 +37,9 @@ export default function Settings() {
     setSavingSettings(true)
     try {
       await settingsService.updateSettings(appSettings)
-      alert('Configuración guardada exitosamente')
+      setShowSuccessModal(true)
+      // Emitir evento para que otros componentes se actualicen
+      window.dispatchEvent(new CustomEvent('settingsUpdated'))
     } catch (error: any) {
       console.error('Error saving settings:', error)
       alert(error.response?.data?.detail || 'Error guardando configuración')
@@ -82,10 +86,18 @@ export default function Settings() {
                   <input
                     type="checkbox"
                     checked={appSettings.show_software_factory_mode}
-                    onChange={(e) => setAppSettings({
-                      ...appSettings,
-                      show_software_factory_mode: e.target.checked
-                    })}
+                    onChange={(e) => {
+                      const newValue = e.target.checked
+                      const updatedSettings = {
+                        ...appSettings,
+                        show_software_factory_mode: newValue
+                      }
+                      // Si se desactiva software factory y el default_mode es software_factory, cambiar a product
+                      if (!newValue && updatedSettings.default_mode === 'software_factory') {
+                        updatedSettings.default_mode = 'product'
+                      }
+                      setAppSettings(updatedSettings)
+                    }}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-purple"></div>
@@ -104,10 +116,18 @@ export default function Settings() {
                   <input
                     type="checkbox"
                     checked={appSettings.show_product_mode}
-                    onChange={(e) => setAppSettings({
-                      ...appSettings,
-                      show_product_mode: e.target.checked
-                    })}
+                    onChange={(e) => {
+                      const newValue = e.target.checked
+                      const updatedSettings = {
+                        ...appSettings,
+                        show_product_mode: newValue
+                      }
+                      // Si se desactiva product y el default_mode es product, cambiar a software_factory
+                      if (!newValue && updatedSettings.default_mode === 'product') {
+                        updatedSettings.default_mode = 'software_factory'
+                      }
+                      setAppSettings(updatedSettings)
+                    }}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-cyan"></div>
@@ -313,6 +333,13 @@ export default function Settings() {
           </div>
         </GlassCard>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        message="Configuración guardada exitosamente"
+      />
     </div>
   )
 }

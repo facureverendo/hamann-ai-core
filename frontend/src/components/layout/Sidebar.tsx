@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard, 
@@ -9,10 +10,11 @@ import {
   AlertTriangle, 
   Settings 
 } from 'lucide-react'
+import { settingsService, type AppSettings } from '../../services/settingsService'
 
-const menuItems = [
+const allMenuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/workspaces', icon: FolderOpen, label: 'Workspaces' },
+  { path: '/workspaces', icon: FolderOpen, label: 'Workspaces', requiresSoftwareFactory: true },
   { path: '/projects', icon: FolderKanban, label: 'Features' },
   { path: '/meetings', icon: Video, label: 'Meetings' },
   { path: '/prd', icon: FileText, label: 'PRDs' },
@@ -22,6 +24,47 @@ const menuItems = [
 ]
 
 export default function Sidebar() {
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null)
+
+  useEffect(() => {
+    loadSettings()
+    
+    // Escuchar eventos de actualización de configuración
+    const handleSettingsUpdate = () => {
+      loadSettings()
+    }
+    
+    window.addEventListener('settingsUpdated', handleSettingsUpdate)
+    
+    return () => {
+      window.removeEventListener('settingsUpdated', handleSettingsUpdate)
+    }
+  }, [])
+
+  const loadSettings = async () => {
+    try {
+      const settings = await settingsService.getSettings()
+      setAppSettings(settings)
+    } catch (err) {
+      console.error('Error loading settings:', err)
+      // Usar valores por defecto si falla
+      setAppSettings({
+        show_software_factory_mode: true,
+        show_product_mode: true,
+        default_mode: 'product'
+      })
+    }
+  }
+
+  // Filtrar items del menú según la configuración
+  const menuItems = allMenuItems.filter((item) => {
+    // Si el item requiere software factory mode, verificar que esté activo
+    if (item.requiresSoftwareFactory) {
+      return appSettings?.show_software_factory_mode ?? true
+    }
+    return true
+  })
+
   return (
     <aside className="w-20 bg-dark-secondary border-r border-white/10 flex flex-col items-center py-6 relative z-50">
       <div className="mb-8">
