@@ -1,0 +1,50 @@
+{
+  "session_started": "2025-12-10T21:25:48.756365",
+  "last_updated": "2025-12-10T21:35:03.563504",
+  "answers": [
+    {
+      "section_key": "ux_flows",
+      "section_title": "UX & Flows",
+      "question": "¿Cómo será el flujo de usuario para seleccionar y exportar los datos desde la Base de Conocimiento a las herramientas externas?",
+      "answer": "La data se exporta en formato csv, y el usuario elige luego como utilizar dicha informacion. El flujo de importacion a las otras herramientas corre por cuenta del usuario.",
+      "answered_at": "2025-12-10T21:33:40.449808",
+      "skipped": false
+    },
+    {
+      "section_key": "acceptance_criteria",
+      "section_title": "Acceptance Criteria",
+      "question": "¿Cuáles son los criterios específicos de aceptación para la funcionalidad de exportación de datos?",
+      "answer": "Exportacion exitosa a csv, con las columnas previamente definidas",
+      "answered_at": "2025-12-10T21:33:37.738670",
+      "skipped": false
+    },
+    {
+      "section_key": "opportunity_analysis",
+      "section_title": "Opportunity & Market Analysis",
+      "question": "¿Qué oportunidades de mercado se han identificado para la funcionalidad de exportación de datos en KB Analytics?",
+      "answer": "",
+      "answered_at": "2025-12-10T21:34:10.608088",
+      "skipped": true
+    },
+    {
+      "section_key": "risks_challenges",
+      "section_title": "Risks & Challenges",
+      "question": "¿Cuáles son los principales riesgos y desafíos asociados con la implementación de la funcionalidad de exportación de datos?",
+      "answer": "Problemas de compatibilidad con herramientas externas",
+      "answered_at": "2025-12-10T21:34:28.850397",
+      "skipped": false
+    },
+    {
+      "section_key": "out_of_scope",
+      "section_title": "Out of Scope",
+      "question": "¿Qué elementos o funcionalidades están fuera del alcance de esta propuesta de exportación de datos?",
+      "answer": "Queda fuera del alcance, la posterior importacion de dicha data en herramientas externas.",
+      "answered_at": "2025-12-10T21:35:03.563477",
+      "skipped": false
+    }
+  ],
+  "regeneration_count": 1,
+  "status": "completed",
+  "completed_at": "2025-12-10T21:36:33.399670",
+  "last_regenerated": "2025-12-10T21:35:29.074119"
+}

@@ -138,5 +138,36 @@ export const projectService = {
     const response = await apiClient.get(`/api/projects/${projectId}/gaps`)
     return response.data
   },
+
+  // Interactive Questions API
+  async getInteractiveSession(projectId: string, maxQuestions: number = 15): Promise<any> {
+    const response = await apiClient.get(`/api/projects/${projectId}/interactive-questions/session`, {
+      params: { max_questions: maxQuestions }
+    })
+    return response.data
+  },
+
+  async saveAnswer(projectId: string, answerData: {
+    section_key: string
+    answer: string
+    skipped: boolean
+    question?: string
+    section_title?: string
+  }): Promise<void> {
+    const response = await apiClient.post(`/api/projects/${projectId}/interactive-questions/answer`, answerData)
+    return response.data
+  },
+
+  async regenerateQuestions(projectId: string, maxQuestions: number = 15): Promise<any> {
+    const response = await apiClient.post(`/api/projects/${projectId}/interactive-questions/regenerate`, null, {
+      params: { max_questions: maxQuestions }
+    })
+    return response.data
+  },
+
+  async finalizeSession(projectId: string): Promise<void> {
+    const response = await apiClient.post(`/api/projects/${projectId}/interactive-questions/finalize`)
+    return response.data
+  },
 }
 

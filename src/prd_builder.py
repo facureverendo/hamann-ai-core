@@ -128,27 +128,32 @@ Tienes información parcial sobre un producto. Tu trabajo es generar preguntas e
 3. Ofrece opciones múltiples cuando sea apropiado
 4. Prioriza preguntas críticas primero
 5. Máximo {max_questions} preguntas
+6. USA LA CLAVE DE LA SECCIÓN (section_key), NO el título
 
 **Información que ya tienes:**
 {known_info}
 
-**Secciones faltantes (prioridad crítica):**
+**Secciones faltantes con sus CLAVES (usa estas claves exactas en section_key):**
+
+**CRÍTICAS:**
 {critical_gaps}
 
-**Secciones faltantes (prioridad importante):**
+**IMPORTANTES:**
 {important_gaps}
 
 **Formato de salida (JSON):**
 {{
   "questions": [
     {{
-      "section_key": "clave de la sección",
+      "section_key": "la_clave_exacta_de_la_seccion",  // IMPORTANTE: usa la clave (ej: "ux_flows"), NO el título
       "question": "Pregunta específica y clara",
       "context": "Por qué necesito esta información",
       "options": ["Opción 1", "Opción 2", "Otro"]  // opcional, para multiple choice
     }}
   ]
 }}
+
+IMPORTANTE: El campo "section_key" debe ser la CLAVE de la sección (como "ux_flows", "acceptance_criteria"), NO el título traducido.
 
 Genera preguntas inteligentes y específicas."""
 
@@ -301,6 +306,10 @@ def generate_questions(analysis: AnalysisResult, client: OpenAI, max_questions: 
         print("   • No hay gaps detectados")
         return []
     
+    print(f"\n🔍 DEBUG: Total gaps detectados: {len(analysis.gaps)}")
+    for gap in analysis.gaps:
+        print(f"   - {gap.section_title} (priority: {gap.priority})")
+    
     # Prepare known info summary
     known_info = f"**Producto:** {analysis.product_name}\n\n"
     if analysis.explicit_features:
@@ -321,13 +330,15 @@ def generate_questions(analysis: AnalysisResult, client: OpenAI, max_questions: 
     critical_gaps = [g for g in analysis.gaps if g.priority == SectionPriority.CRITICAL]
     important_gaps = [g for g in analysis.gaps if g.priority == SectionPriority.IMPORTANT]
     
+    print(f"🔍 DEBUG: Gaps críticos: {len(critical_gaps)}, Gaps importantes: {len(important_gaps)}")
+    
     # If no critical or important gaps, return empty (optional sections don't need questions)
     if not critical_gaps and not important_gaps:
         print("   • Solo gaps opcionales detectados, no se generan preguntas")
         return []
     
-    critical_gaps_str = "\n".join([f"- {g.section_title}" for g in critical_gaps])
-    important_gaps_str = "\n".join([f"- {g.section_title}" for g in important_gaps])
+    critical_gaps_str = "\n".join([f"- {g.section_title} (clave: {g.section_key})" for g in critical_gaps])
+    important_gaps_str = "\n".join([f"- {g.section_title} (clave: {g.section_key})" for g in important_gaps])
     
     # Get language instruction
     from language_detector import get_language_instruction
@@ -344,6 +355,9 @@ def generate_questions(analysis: AnalysisResult, client: OpenAI, max_questions: 
     )
     
     try:
+        print(f"🔍 DEBUG: Llamando a OpenAI para generar preguntas...")
+        print(f"🔍 DEBUG: Prompt length: {len(prompt)} caracteres")
+        
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -356,9 +370,12 @@ def generate_questions(analysis: AnalysisResult, client: OpenAI, max_questions: 
         )
         
         content = response.choices[0].message.content
-        parsed = json.loads(content)
+        print(f"🔍 DEBUG: Respuesta del LLM recibida (primeros 500 chars): {content[:500]}")
         
+        parsed = json.loads(content)
         questions_data = parsed.get("questions", [])
+        
+        print(f"🔍 DEBUG: Preguntas generadas por el LLM: {len(questions_data)}")
         
         # Create Gap objects with questions
         gaps_with_questions = []
@@ -376,11 +393,56 @@ def generate_questions(analysis: AnalysisResult, client: OpenAI, max_questions: 
                     options=q_data.get("options")
                 )
                 gaps_with_questions.append(gap)
+                print(f"   ✓ Pregunta agregada para {section.title}")
+            else:
+                print(f"   ✗ Sección no encontrada para key: {section_key}")
         
+        print(f"🔍 DEBUG: Total preguntas retornadas: {len(gaps_with_questions)}")
         return gaps_with_questions
         
     except Exception as e:
+        print(f"❌ ERROR en generate_questions: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise RuntimeError(f"Error generating questions: {str(e)}")
+
+
+def regenerate_questions_with_context(
+    context: str, 
+    previous_answers: Dict[str, str], 
+    client: OpenAI, 
+    max_questions: int = 15,
+    language_code: str = "es"
+) -> List[Gap]:
+    """
+    Regenerate questions considering previous answers.
+    
+    Args:
+        context: Original input context
+        previous_answers: Dict of section_key -> answer from user
+        client: OpenAI client
+        max_questions: Maximum number of questions to generate
+        language_code: Language code for questions
+        
+    Returns:
+        List of new Gaps with questions for remaining gaps
+    """
+    # Build enriched context with previous answers
+    enriched_context = context + "\n\n## RESPUESTAS DEL USUARIO:\n\n"
+    for section_key, answer in previous_answers.items():
+        section = PRDTemplate.get_section(section_key)
+        if section:
+            enriched_context += f"**{section.title}:**\n{answer}\n\n"
+    
+    # Re-analyze with enriched context
+    print(f"🔄 Re-analizando con {len(previous_answers)} respuestas previas...")
+    analysis = analyze_input(enriched_context, client, language_code=language_code)
+    
+    # Generate new questions only for remaining gaps
+    print(f"   Gaps detectados después del re-análisis: {len(analysis.gaps)}")
+    questions = generate_questions(analysis, client, max_questions=max_questions, language_code=language_code)
+    
+    return questions
 
 
 def build_prd(

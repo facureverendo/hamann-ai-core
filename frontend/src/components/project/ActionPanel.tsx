@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import GlassCard from '../ui/GlassCard'
 import NeonButton from '../ui/NeonButton'
+import InteractiveQuestions from './InteractiveQuestions'
 import { 
   FileText, 
   Search, 
@@ -42,6 +43,7 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
   const [error, setError] = useState<string | null>(null)
   const [showResults, setShowResults] = useState<string | null>(null)
   const [resultsData, setResultsData] = useState<any>(null)
+  const [showInteractiveQuestions, setShowInteractiveQuestions] = useState(false)
 
   const actions: ActionStatus[] = [
     {
@@ -76,7 +78,7 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
       icon: FileCheck,
       endpoint: 'build-prd',
       status: projectState?.prd_built ? 'completed' : (projectState?.gaps_analyzed ? 'available' : 'available'),
-      description: 'Construye el PRD completo basado en el análisis',
+      description: 'Construye el PRD completo basado en el análisis y las respuestas del usuario',
       requires: ['gaps_analyzed']
     },
     {
@@ -102,11 +104,24 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
       }
     }
 
+    // Special handling for generate-questions: open interactive modal
+    if (action.id === 'generate-questions') {
+      setShowInteractiveQuestions(true)
+      return
+    }
+
     setLoading(action.id)
     setError(null)
 
     try {
-      await projectService.executeAction(projectId, action.endpoint)
+      const result = await projectService.executeAction(projectId, action.endpoint)
+      
+      // Show success message for build-prd with user answers info
+      if (action.id === 'build-prd' && result?.user_answers_count > 0) {
+        console.log(`✅ PRD construido con ${result.user_answers_count} respuestas del usuario`)
+        console.log(`   Secciones completadas: ${result.user_answers_used?.join(', ')}`)
+      }
+      
       if (onStateUpdate) {
         onStateUpdate()
       }
@@ -133,10 +148,8 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
           break
         
         case 'generate-questions':
-          // Mostrar preguntas
-          const questions = await projectService.getQuestions(projectId)
-          setResultsData(questions)
-          setShowResults('questions')
+          // Open interactive session
+          setShowInteractiveQuestions(true)
           break
         
         case 'build-prd':
@@ -256,8 +269,8 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
 
       {/* Results Modal */}
       {showResults && resultsData && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <GlassCard className="max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <GlassCard className="max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 bg-dark-primary/95 border-2 border-white/20">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-white">
                 {showResults === 'gaps' && 'Gaps Detectados'}
@@ -500,6 +513,20 @@ export default function ActionPanel({ projectId, projectState, onStateUpdate }: 
             )}
           </GlassCard>
         </div>
+      )}
+
+      {/* Interactive Questions Modal */}
+      {showInteractiveQuestions && (
+        <InteractiveQuestions
+          projectId={projectId}
+          onClose={() => setShowInteractiveQuestions(false)}
+          onComplete={() => {
+            setShowInteractiveQuestions(false)
+            if (onStateUpdate) {
+              onStateUpdate()
+            }
+          }}
+        />
       )}
     </GlassCard>
   )

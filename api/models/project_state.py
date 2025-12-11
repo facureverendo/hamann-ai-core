@@ -22,6 +22,11 @@ class ProjectState(BaseModel):
     prd_built: bool = False
     backlog_generated: bool = False
     
+    # Interactive session status
+    interactive_session_active: bool = False
+    questions_answered_count: Optional[int] = 0
+    questions_skipped_count: Optional[int] = 0
+    
     # Optional data
     language_code: Optional[str] = None
     context_length: Optional[int] = None

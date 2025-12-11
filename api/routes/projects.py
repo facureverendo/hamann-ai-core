@@ -608,3 +608,108 @@ async def get_project(project_id: str):
         description=None,
         state=state.to_dict()
     )
+
+
+# Interactive Questions Endpoints
+
+@router.get("/{project_id}/interactive-questions/session")
+async def get_interactive_session(project_id: str, max_questions: int = 15):
+    """Start or resume an interactive questions session (uses cache if available)"""
+    try:
+        # Try to get cached questions first
+        result = processor.start_interactive_session(project_id, max_questions, force_regenerate=False)
+        return {
+            "status": "success",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = f"Error starting interactive session: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=f"Error starting interactive session: {str(e)}")
+
+
+class AnswerRequest(BaseModel):
+    section_key: str
+    answer: str
+    skipped: bool = False
+    question: str = ""
+    section_title: str = ""
+
+
+@router.post("/{project_id}/interactive-questions/answer")
+async def save_interactive_answer(project_id: str, request: AnswerRequest):
+    """Save a user's answer to a question"""
+    try:
+        result = processor.save_answer(
+            project_id, 
+            request.section_key, 
+            request.answer, 
+            request.skipped,
+            request.question,
+            request.section_title
+        )
+        return {
+            "status": "success",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving answer: {str(e)}")
+
+
+@router.post("/{project_id}/interactive-questions/regenerate")
+async def regenerate_interactive_questions(project_id: str, max_questions: int = 15):
+    """Regenerate questions based on current answers (forces new API call)"""
+    try:
+        # Get current session state
+        session_state = processor.get_session_state(project_id)
+        
+        # Load answers file and increment regeneration count
+        project_dir = processor.get_project_dir(project_id)
+        answers_file = project_dir / "answers.json"
+        
+        if answers_file.exists():
+            with open(answers_file, 'r', encoding='utf-8') as f:
+                answers_data = json.load(f)
+            
+            answers_data['regeneration_count'] = answers_data.get('regeneration_count', 0) + 1
+            answers_data['last_regenerated'] = datetime.now().isoformat()
+            
+            with open(answers_file, 'w', encoding='utf-8') as f:
+                json.dump(answers_data, f, indent=2, ensure_ascii=False)
+        
+        # Force regenerate questions (will call OpenAI API)
+        result = processor.start_interactive_session(project_id, max_questions, force_regenerate=True)
+        
+        return {
+            "status": "success",
+            "message": "Questions regenerated successfully",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_detail = f"Error regenerating questions: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=f"Error regenerating questions: {str(e)}")
+
+
+@router.post("/{project_id}/interactive-questions/finalize")
+async def finalize_interactive_session(project_id: str):
+    """Finalize the interactive session"""
+    try:
+        result = processor.finalize_session(project_id)
+        return {
+            "status": "success",
+            "message": "Interactive session finalized successfully",
+            **result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error finalizing session: {str(e)}")

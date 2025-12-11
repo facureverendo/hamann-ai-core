@@ -1,0 +1,70 @@
+{
+  "questions_by_priority": {
+    "critical": [],
+    "important": [
+      {
+        "section_key": "opportunity_analysis",
+        "section_title": "Opportunity & Market Analysis",
+        "priority": "important",
+        "question": "¿Cuáles son las principales oportunidades de mercado para la funcionalidad de exportación de datos de la KB?",
+        "context": "Necesito entender qué oportunidades de mercado existen para justificar la inversión en esta funcionalidad y cómo se alinea con las necesidades actuales del mercado.",
+        "options": [
+          "Expansión a nuevos mercados",
+          "Demanda creciente de análisis de datos",
+          "Otro"
+        ]
+      },
+      {
+        "section_key": "opportunity_analysis",
+        "section_title": "Opportunity & Market Analysis",
+        "priority": "important",
+        "question": "¿Qué competidores ofrecen funcionalidades similares de exportación de datos y cómo se comparan con nuestra propuesta?",
+        "context": "Conocer a los competidores nos permitirá identificar ventajas competitivas y áreas de mejora para nuestra solución.",
+        "options": [
+          "Competidor A",
+          "Competidor B",
+          "Ninguno"
+        ]
+      },
+      {
+        "section_key": "opportunity_analysis",
+        "section_title": "Opportunity & Market Analysis",
+        "priority": "important",
+        "question": "¿Qué tendencias actuales en el análisis de datos podrían influir en la adopción de esta funcionalidad?",
+        "context": "Identificar tendencias nos ayudará a anticipar cambios en las necesidades del cliente y adaptar nuestra propuesta en consecuencia.",
+        "options": [
+          "Aumento del uso de IA",
+          "Mayor integración de datos",
+          "Otro"
+        ]
+      },
+      {
+        "section_key": "opportunity_analysis",
+        "section_title": "Opportunity & Market Analysis",
+        "priority": "important",
+        "question": "¿Cuál es el tamaño del mercado potencial para esta funcionalidad de exportación de datos?",
+        "context": "Determinar el tamaño del mercado es crucial para evaluar el retorno de inversión y priorizar el desarrollo de esta funcionalidad.",
+        "options": [
+          "Pequeño",
+          "Mediano",
+          "Grande"
+        ]
+      },
+      {
+        "section_key": "opportunity_analysis",
+        "section_title": "Opportunity & Market Analysis",
+        "priority": "important",
+        "question": "¿Existen barreras de entrada significativas para nuevos competidores en este mercado?",
+        "context": "Conocer las barreras de entrada nos permitirá evaluar la sostenibilidad de nuestra ventaja competitiva.",
+        "options": [
+          "Sí",
+          "No",
+          "No estoy seguro"
+        ]
+      }
+    ],
+    "optional": []
+  },
+  "total_count": 5,
+  "generated_at": "2025-12-10T21:35:53.293813"
+}
