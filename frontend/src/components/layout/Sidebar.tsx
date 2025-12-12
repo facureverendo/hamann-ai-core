@@ -5,7 +5,6 @@ import {
   FolderKanban,
   FolderOpen,
   Video, 
-  FileText, 
   Brain, 
   AlertTriangle, 
   Settings 
@@ -17,7 +16,6 @@ const allMenuItems = [
   { path: '/workspaces', icon: FolderOpen, label: 'Workspaces', requiresSoftwareFactory: true },
   { path: '/projects', icon: FolderKanban, label: 'Features' },
   { path: '/meetings', icon: Video, label: 'Meetings' },
-  { path: '/prd', icon: FileText, label: 'PRDs' },
   { path: '/assistant', icon: Brain, label: 'AI Insights', hidden: true }, // Oculto temporalmente hasta implementar funcionalidad
   { path: '/risks', icon: AlertTriangle, label: 'Risks' },
   { path: '/settings', icon: Settings, label: 'Settings' },

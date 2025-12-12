@@ -10,6 +10,7 @@ import PRDViewer from './pages/PRDViewer'
 import MeetingSummary from './pages/MeetingSummary'
 import AITimeline from './pages/AITimeline'
 import RiskRadar from './pages/RiskRadar'
+import RisksList from './pages/RisksList'
 import AIAssistant from './pages/AIAssistant'
 import Settings from './pages/Settings'
 import WorkspaceList from './pages/WorkspaceList'
@@ -46,6 +47,7 @@ function App() {
               <Route path="/prd/:id" element={<PRDViewer />} />
               <Route path="/meetings/:id" element={<MeetingSummary />} />
               <Route path="/timeline/:id" element={<AITimeline />} />
+              <Route path="/risks" element={<RisksList />} />
               <Route path="/risks/:id" element={<RiskRadar />} />
               
               {/* Global routes */}

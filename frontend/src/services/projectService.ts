@@ -36,6 +36,13 @@ export interface Risk {
   severity: string
   sector: string
   description: string
+  status?: string
+  mitigation_plan?: string
+  probability?: number
+  impact?: string
+  created_at?: string
+  updated_at?: string
+  source?: string
 }
 
 export interface Timeline {
